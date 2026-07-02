@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do Life Dashboard</title>
+  <style>
+    /* ─── CSS Custom Properties: Light / Dark Themes ─── */
+    :root,
+    [data-theme="light"] {
+      --color-bg:          #f5f5f5;
+      --color-surface:     #ffffff;
+      --color-surface-alt: #f0f0f0;
+      --color-border:      #dddddd;
+      --color-text:        #1a1a1a;
+      --color-text-muted:  #666666;
+      --color-primary:     #4a6cf7;
+      --color-primary-hover: #3a5ce5;
+      --color-danger:      #e53935;
+      --color-danger-hover:#c62828;
+      --color-success:     #43a047;
+      --color-disabled-bg: #cccccc;
+      --color-disabled-text: #888888;
+      --shadow-widget:     0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    [data-theme="dark"] {
+      --color-bg:          #1a1a2e;
+      --color-surface:     #16213e;
+      --color-surface-alt: #0f3460;
+      --color-border:      #2a2a4a;
+      --color-text:        #e0e0e0;
+      --color-text-muted:  #9090aa;
+      --color-primary:     #6c8ef7;
+      --color-primary-hover: #8aaaf9;
+      --color-danger:      #ef5350;
+      --color-danger-hover:#e53935;
+      --color-success:     #66bb6a;
+      --color-disabled-bg: #333355;
+      --color-disabled-text:#666688;
+      --shadow-widget:     0 2px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    /* ─── Layout ─── */
+    .dashboard-header {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      padding: 0.75rem 1.5rem;
+      background-color: var(--color-surface);
+      border-bottom: 1px solid var(--color-border);
+      box-shadow: var(--shadow-widget);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      padding: 1.5rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    /* ─── Widget Base ─── */
+    .widget {
+      background-color: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow-widget);
+    }
+
+    .widget-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* ─── Greeting Widget ─── */
+    .greeting-time {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+      letter-spacing: -0.02em;
+    }
+
+    .greeting-date {
+      font-size: 0.9rem;
+      color: var(--color-text-muted);
+      margin-top: 0.25rem;
+    }
+
+    .greeting-message {
+      font-size: 1.25rem;
+      font-weight: 500;
+      margin-top: 0.75rem;
+    }
+
+    .greeting-name-form {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    /* ─── Focus Timer Widget ─── */
+    .timer-display {
+      font-size: 3rem;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.04em;
+      margin: 0.5rem 0;
+    }
+
+    .timer-controls {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .timer-completion {
+      text-align: center;
+      color: var(--color-success);
+      font-weight: 600;
+      margin-top: 0.5rem;
+      min-height: 1.4em;
+    }
+
+    /* ─── To-Do List Widget ─── */
+    .todo-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .todo-sort-row {
+      margin-bottom: 0.5rem;
+    }
+
+    .todo-list {
+      list-style: none;
+    }
+
+    .todo-placeholder {
+      color: var(--color-text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    /* ─── Quick Links Widget ─── */
+    .links-add-form {
+      display: grid;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .links-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .links-placeholder {
+      color: var(--color-text-muted);
+      font-style: italic;
+      text-align: center;
+      padding: 0.75rem 0;
+    }
+
+    /* ─── Shared Form Controls ─── */
+    input[type="text"],
+    input[type="url"] {
+      flex: 1;
+      padding: 0.45rem 0.65rem;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background-color: var(--color-surface-alt);
+      color: var(--color-text);
+      font-size: 0.9rem;
+      outline: none;
+    }
+
+    input[type="text"]:focus,
+    input[type="url"]:focus {
+      border-color: var(--color-primary);
+    }
+
+    button {
+      padding: 0.45rem 0.85rem;
+      border: none;
+      border-radius: 6px;
+      background-color: var(--color-primary);
+      color: #ffffff;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.12s ease;
+    }
+
+    button:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    button:disabled {
+      background-color: var(--color-disabled-bg);
+      color: var(--color-disabled-text);
+      cursor: not-allowed;
+    }
+
+    button.btn-danger {
+      background-color: var(--color-danger);
+    }
+
+    button.btn-danger:hover {
+      background-color: var(--color-danger-hover);
+    }
+
+    button.btn-ghost {
+      background-color: transparent;
+      color: var(--color-text-muted);
+      border: 1px solid var(--color-border);
+    }
+
+    button.btn-ghost:hover {
+      background-color: var(--color-surface-alt);
+      color: var(--color-text);
+    }
+
+    select {
+      padding: 0.4rem 0.6rem;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      background-color: var(--color-surface-alt);
+      color: var(--color-text);
+      font-size: 0.875rem;
+      outline: none;
+    }
+
+    .error-msg {
+      color: var(--color-danger);
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+      min-height: 1em;
+    }
+
+    /* ─── Theme Toggle Button ─── */
+    .theme-toggle {
+      background: none;
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 0.35rem 0.75rem;
+      font-size: 0.875rem;
+      color: var(--color-text);
+      cursor: pointer;
+    }
+
+    .theme-toggle:hover {
+      background-color: var(--color-surface-alt);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Dashboard Header (Theme Toggle) ─── -->
+  <header class="dashboard-header" role="banner">
+    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light/dark theme">
+      🌙 Dark Mode
+    </button>
+  </header>
+
+  <!-- ─── Dashboard Grid ─── -->
+  <main class="dashboard-grid" role="main">
+
+    <!-- ─── Greeting Widget ─── -->
+    <section class="widget" id="widget-greeting" aria-label="Greeting and clock">
+      <p class="widget-title">Welcome</p>
+      <p class="greeting-time" id="greeting-time" aria-live="polite">--:--</p>
+      <p class="greeting-date" id="greeting-date"></p>
+      <p class="greeting-message" id="greeting-message" aria-live="polite">Hello!</p>
+      <form class="greeting-name-form" id="greeting-name-form" aria-label="Set your name">
+        <label for="greeting-name-input" class="sr-only">Your name</label>
+        <input
+          type="text"
+          id="greeting-name-input"
+          placeholder="Enter your name…"
+          maxlength="50"
+          autocomplete="off"
+        />
+        <button type="submit" id="greeting-name-btn">Save</button>
+      </form>
+      <p class="error-msg" id="greeting-name-error" aria-live="polite"></p>
+    </section>
+
+    <!-- ─── Focus Timer Widget ─── -->
+    <section class="widget" id="widget-timer" aria-label="Focus timer">
+      <p class="widget-title">Focus Timer</p>
+      <p class="timer-display" id="timer-display" aria-live="polite" aria-atomic="true">25:00</p>
+      <div class="timer-controls">
+        <button id="timer-start" aria-label="Start timer">Start</button>
+        <button id="timer-stop" class="btn-ghost" aria-label="Stop timer">Stop</button>
+        <button id="timer-reset" class="btn-ghost" aria-label="Reset timer">Reset</button>
+      </div>
+      <p class="timer-completion" id="timer-completion" aria-live="polite"></p>
+    </section>
+
+    <!-- ─── To-Do List Widget ─── -->
+    <section class="widget" id="widget-todo" aria-label="To-do list">
+      <p class="widget-title">To-Do List</p>
+      <form class="todo-input-row" id="todo-add-form" aria-label="Add a task">
+        <label for="todo-input" class="sr-only">New task</label>
+        <input
+          type="text"
+          id="todo-input"
+          placeholder="Add a task…"
+          maxlength="255"
+          autocomplete="off"
+        />
+        <button type="submit" id="todo-add-btn">Add</button>
+      </form>
+      <p class="error-msg" id="todo-error" aria-live="polite"></p>
+      <div class="todo-sort-row">
+        <label for="todo-sort" class="sr-only">Sort order</label>
+        <select id="todo-sort" aria-label="Sort tasks">
+          <option value="default">Default</option>
+          <option value="completed-last">Completed Last</option>
+        </select>
+      </div>
+      <ul class="todo-list" id="todo-list" aria-label="Task list" aria-live="polite">
+        <!-- Tasks rendered here by App.TodoList -->
+      </ul>
+      <p class="todo-placeholder" id="todo-placeholder">No tasks yet — add one above!</p>
+    </section>
+
+    <!-- ─── Quick Links Widget ─── -->
+    <section class="widget" id="widget-links" aria-label="Quick links">
+      <p class="widget-title">Quick Links</p>
+      <form class="links-add-form" id="links-add-form" aria-label="Add a quick link">
+        <label for="links-label-input" class="sr-only">Link label</label>
+        <input
+          type="text"
+          id="links-label-input"
+          placeholder="Label (max 50 chars)"
+          maxlength="50"
+          autocomplete="off"
+        />
+        <label for="links-url-input" class="sr-only">URL</label>
+        <input
+          type="url"
+          id="links-url-input"
+          placeholder="https://example.com"
+          autocomplete="off"
+        />
+        <button type="submit" id="links-add-btn">Add Link</button>
+      </form>
+      <p class="error-msg" id="links-error" aria-live="polite"></p>
+      <div class="links-grid" id="links-grid" aria-label="Quick links list" aria-live="polite">
+        <!-- Links rendered here by App.QuickLinks -->
+      </div>
+      <p class="links-placeholder" id="links-placeholder">No links yet — add one above!</p>
+    </section>
+
+  </main>
+
+  <script>
+    'use strict';
+
+    // ─── Shared Application Namespace ───────────────────────────────────────────
+    window.App = {};
+
+    // ─── App.Storage ─────────────────────────────────────────────────────────────
+    App.Storage = (function () {
+      // Storage key constants
+      const KEYS = {
+        TASKS:    'tld_tasks',
+        LINKS:    'tld_links',
+        THEME:    'tld_theme',
+        USERNAME: 'tld_username',
+      };
+
+      /**
+       * Retrieve and deserialize a value from localStorage.
+       * Returns null if the key is missing or the stored value is malformed JSON.
+       * @param {string} key
+       * @returns {any|null}
+       */
+      function get(key) {
+        const raw = localStorage.getItem(key);
+        if (raw === null) return null;
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          if (e instanceof SyntaxError) return null;
+          throw e;
+        }
+      }
+
+      /**
+       * Serialize and store a value in localStorage.
+       * Returns true on success, false if storage is unavailable or full.
+       * @param {string} key
+       * @param {any} value
+       * @returns {boolean}
+       */
+      function set(key, value) {
+        try {
+          localStorage.setItem(key, JSON.stringify(value));
+          return true;
+        } catch (e) {
+          if (e instanceof DOMException &&
+              (e.name === 'QuotaExceededError' ||
+               e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+               e.name === 'SecurityError')) {
+            return false;
+          }
+          return false;
+        }
+      }
+
+      /**
+       * Remove a key from localStorage.
+       * @param {string} key
+       */
+      function remove(key) {
+        localStorage.removeItem(key);
+      }
+
+      return { get, set, remove, KEYS };
+    })();
+
+    // ─── App.ThemeManager ────────────────────────────────────────────────────────
+    App.ThemeManager = (function () {
+      var _currentTheme = 'light';
+
+      function setTheme(theme) {
+        _currentTheme = theme;
+
+        // Toggle data-theme attribute on <html> — synchronous DOM write (< 200 ms)
+        document.documentElement.setAttribute('data-theme', theme);
+
+        // Persist to localStorage (failures are silently ignored per Req 9.6)
+        App.Storage.set('tld_theme', theme);
+
+        // Update toggle button label to show the opposite action
+        var btn = document.getElementById('theme-toggle');
+        if (btn) {
+          if (theme === 'dark') {
+            btn.textContent = '☀ Light Mode';
+            btn.setAttribute('aria-label', 'Switch to light theme');
+          } else {
+            btn.textContent = '🌙 Dark Mode';
+            btn.setAttribute('aria-label', 'Switch to dark theme');
+          }
+        }
+      }
+
+      function init() {
+        // Read saved theme before any content renders; fall back to "light"
+        var saved = App.Storage.get('tld_theme');
+        var theme = (saved === 'light' || saved === 'dark') ? saved : 'light';
+        setTheme(theme);
+
+        // Wire click event on the toggle button
+        var btn = document.getElementById('theme-toggle');
+        if (btn) {
+          btn.addEventListener('click', function () {
+            setTheme(_currentTheme === 'light' ? 'dark' : 'light');
+          });
+        }
+      }
+
+      return { init, setTheme };
+    })();
+
+    // ─── App.GreetingWidget ──────────────────────────────────────────────────────
+    App.GreetingWidget = (function () {
+      // ── Internal state ──────────────────────────────────────────────────────
+      var state = {
+        userName: null,   // task 4.3 will wire up the name input
+      };
+
+      // ── DOM refs (resolved once in init) ────────────────────────────────────
+      var elTime;
+      var elDate;
+      var elMessage;
+
+      // ── Pure function: map hour (0–23) to greeting string ───────────────────
+      function getGreeting(hour) {
+        if (hour >= 5  && hour <= 11) return 'Good Morning';
+        if (hour >= 12 && hour <= 17) return 'Good Afternoon';
+        if (hour >= 18 && hour <= 20) return 'Good Evening';
+        // hours 21–23 and 0–4 → Good Night
+        return 'Good Night';
+      }
+
+      // ── Format a Date as HH:MM ───────────────────────────────────────────────
+      function formatTime(date) {
+        var h = String(date.getHours()).padStart(2, '0');
+        var m = String(date.getMinutes()).padStart(2, '0');
+        return h + ':' + m;
+      }
+
+      // ── Format a Date as "Weekday, Month DD, YYYY" ───────────────────────────
+      function formatDate(date) {
+        return date.toLocaleDateString(undefined, {
+          weekday: 'long',
+          year:    'numeric',
+          month:   'long',
+          day:     'numeric',
+        });
+      }
+
+      // ── Build the greeting message (with optional name) ──────────────────────
+      function buildMessage(hour) {
+        var base = getGreeting(hour);
+        if (state.userName) {
+          return base + ', ' + state.userName + '!';
+        }
+        return base + '!';
+      }
+
+      // ── Tracks last-rendered minute to detect changes ────────────────────────
+      var _lastMinute = -1;
+
+      // ── Clock tick: called every second by setInterval ───────────────────────
+      function tick() {
+        var now    = new Date();
+        var hour   = now.getHours();
+        var minute = now.getMinutes();
+
+        // Always update the HH:MM display (Requirement 1.1)
+        elTime.textContent = formatTime(now);
+
+        // Update date display on first tick and whenever the minute changes
+        // (handles midnight rollover — Requirement 1.8)
+        if (minute !== _lastMinute) {
+          _lastMinute = minute;
+          elDate.textContent    = formatDate(now);      // Requirement 1.2
+          elMessage.textContent = buildMessage(hour);   // Requirements 1.3–1.6
+        }
+      }
+
+      // ── Render the greeting message using current state ──────────────────────
+      function renderGreeting() {
+        var now  = new Date();
+        var hour = now.getHours();
+        elMessage.textContent = buildMessage(hour);
+      }
+
+      // ── Public init ─────────────────────────────────────────────────────────
+      function init() {
+        elTime    = document.getElementById('greeting-time');
+        elDate    = document.getElementById('greeting-date');
+        elMessage = document.getElementById('greeting-message');
+
+        // Requirement 10.3: read saved username from storage on load
+        var saved = App.Storage.get('tld_username');
+        // Storage.get returns null on missing key or parse error; treat as no name
+        if (saved && typeof saved === 'string' && saved.trim().length > 0) {
+          state.userName = saved.trim();
+        }
+
+        // Run immediately so the display is populated before the first second
+        // (tick only updates greeting on minute change, so force it now)
+        tick();
+
+        // Requirement 1.1: update every second
+        setInterval(tick, 1000);
+
+        // ── Wire the name input form (Requirements 10.1, 10.2, 10.4, 10.5, 10.6) ──
+        var nameForm  = document.getElementById('greeting-name-form');
+        var nameInput = document.getElementById('greeting-name-input');
+
+        if (nameForm && nameInput) {
+          // Pre-fill the input with any saved name so the user can see / edit it
+          if (state.userName) {
+            nameInput.value = state.userName;
+          }
+
+          nameForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+
+            var trimmed = nameInput.value.trim();
+
+            if (trimmed.length > 0) {
+              // Non-empty: save name, update state, update greeting
+              // Enforce 50-char max (HTML maxlength already does this, but be defensive)
+              if (trimmed.length > 50) {
+                trimmed = trimmed.slice(0, 50);
+              }
+              state.userName = trimmed;
+              App.Storage.set('tld_username', trimmed);   // Requirement 10.4
+            } else {
+              // Empty / whitespace-only: clear name from state and storage
+              state.userName = null;
+              App.Storage.remove('tld_username');          // Requirement 10.6
+              nameInput.value = '';
+            }
+
+            // Re-render greeting immediately to reflect the change
+            renderGreeting();
+          });
+        }
+      }
+
+      return { init, getGreeting };
+    })();
+
+    // ─── App.FocusTimer ──────────────────────────────────────────────────────────
+    App.FocusTimer = (function () {
+      // ── Internal state ──────────────────────────────────────────────────────
+      var state = {
+        remaining:  1500,   // seconds (25 × 60)
+        running:    false,
+        intervalId: null
+      };
+
+      // ── Helpers ─────────────────────────────────────────────────────────────
+
+      /**
+       * Format a number of seconds as "MM:SS".
+       * @param {number} totalSeconds
+       * @returns {string}
+       */
+      function formatTime(totalSeconds) {
+        var m = Math.floor(totalSeconds / 60);
+        var s = totalSeconds % 60;
+        return (m < 10 ? '0' + m : String(m)) + ':' + (s < 10 ? '0' + s : String(s));
+      }
+
+      // ── Render ───────────────────────────────────────────────────────────────
+
+      /**
+       * Update the display element to show the current remaining time (MM:SS).
+       * Also clears the completion message whenever the timer is not complete.
+       */
+      function render() {
+        var display    = document.getElementById('timer-display');
+        var completion = document.getElementById('timer-completion');
+        if (display)    display.textContent    = formatTime(state.remaining);
+        if (completion) completion.textContent = '';
+      }
+
+      // ── State machine ────────────────────────────────────────────────────────
+
+      /**
+       * Called every second while the timer is running.
+       * Decrements remaining, re-renders, and triggers complete() at zero.
+       */
+      function tick() {
+        state.remaining -= 1;
+        render();
+        if (state.remaining <= 0) {
+          complete();
+        }
+      }
+
+      /**
+       * Start the countdown.
+       * Guard: no-op if already running (Req 2.8).
+       */
+      function start() {
+        if (state.running) return;           // idempotent guard
+        state.running    = true;
+        state.intervalId = setInterval(tick, 1000);
+        render();
+      }
+
+      /**
+       * Pause the countdown.
+       * Guard: no-op if not currently running (Req 2.9).
+       */
+      function stop() {
+        if (!state.running) return;          // idempotent guard
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        state.running    = false;
+        render();
+      }
+
+      /**
+       * Reset to initial state unconditionally (Req 2.5).
+       * Clears any active interval before restoring defaults.
+       */
+      function reset() {
+        clearInterval(state.intervalId);     // safe even if intervalId is null
+        state.remaining  = 1500;
+        state.running    = false;
+        state.intervalId = null;
+        render();
+      }
+
+      /**
+       * Called automatically when remaining reaches 0 (Req 2.6).
+       * Stops the timer and shows the completion message.
+       */
+      function complete() {
+        clearInterval(state.intervalId);
+        state.intervalId = null;
+        state.running    = false;
+
+        var display    = document.getElementById('timer-display');
+        var completion = document.getElementById('timer-completion');
+        if (display)    display.textContent    = '00:00';
+        if (completion) completion.textContent = '🎉 Focus session complete!';
+      }
+
+      // ── Init: wire up DOM events ─────────────────────────────────────────────
+
+      function init() {
+        render();   // show initial "25:00"
+
+        var btnStart = document.getElementById('timer-start');
+        var btnStop  = document.getElementById('timer-stop');
+        var btnReset = document.getElementById('timer-reset');
+
+        if (btnStart) btnStart.addEventListener('click', start);
+        if (btnStop)  btnStop.addEventListener('click',  stop);
+        if (btnReset) btnReset.addEventListener('click', reset);
+      }
+
+      return { init };
+    })();
+
+    // ─── App.TodoList ────────────────────────────────────────────────────────────
+    App.TodoList = (function () {
+      // ── Internal state ──────────────────────────────────────────────────────
+      const state = {
+        tasks: [],
+        sortOrder: 'default',
+        editingId: null
+      };
+
+      /**
+       * Validate a raw task label string.
+       * Trims whitespace, rejects empty/whitespace-only strings and labels
+       * longer than 255 characters after trimming.
+       * @param {string} raw
+       * @returns {{ valid: false, error: string } | { valid: true, trimmed: string }}
+       */
+      function validateLabel(raw) {
+        const trimmed = (raw || '').trim();
+        if (trimmed.length === 0) {
+          return { valid: false, error: 'Task label cannot be empty.' };
+        }
+        if (trimmed.length > 255) {
+          return { valid: false, error: 'Task label must be 255 characters or fewer.' };
+        }
+        return { valid: true, trimmed };
+      }
+
+      /**
+       * Create a new Task object with a unique id, the given label, completion
+       * state of false, and a creation timestamp.
+       * Uses crypto.randomUUID() when available, falling back to Date.now().toString().
+       * @param {string} label  — already-trimmed label
+       * @returns {{ id: string, label: string, completed: boolean, createdAt: number }}
+       */
+      function createTask(label) {
+        const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+          ? crypto.randomUUID()
+          : Date.now().toString();
+        return {
+          id,
+          label,
+          completed: false,
+          createdAt: Date.now()
+        };
+      }
+
+      /**
+       * Add a new task from a raw label string.
+       * Shows inline error on validation failure; persists and re-renders on success.
+       * @param {string} label
+       */
+      function addTask(label) {
+        const elError = document.getElementById('todo-error');
+        const result = validateLabel(label);
+        if (!result.valid) {
+          if (elError) elError.textContent = result.error;
+          return;
+        }
+        // Clear any previous error
+        if (elError) elError.textContent = '';
+        const task = createTask(result.trimmed);
+        state.tasks.push(task);
+        const saved = App.Storage.set('tld_tasks', state.tasks);
+        if (saved === false) {
+          if (elError) elError.textContent = '⚠ Could not save — storage may be full.';
+        }
+        render();
+      }
+
+      /**
+       * Edit the label of an existing task.
+       * On validation failure: silently retains the original label and exits edit mode.
+       * On success: updates label, persists, and re-renders.
+       * @param {string} id
+       * @param {string} newLabel
+       */
+      function editTask(id, newLabel) {
+        const result = validateLabel(newLabel);
+        // Exit edit mode regardless of outcome
+        state.editingId = null;
+        if (!result.valid) {
+          // Silently retain original label — just re-render to exit edit mode
+          render();
+          return;
+        }
+        const task = state.tasks.find(function (t) { return t.id === id; });
+        if (task) {
+          task.label = result.trimmed;
+          App.Storage.set('tld_tasks', state.tasks);
+        }
+        render();
+      }
+
+      /**
+       * Toggle the completed state of the task with the given id.
+       * Persists and re-renders.
+       * @param {string} id
+       */
+      function toggleComplete(id) {
+        const task = state.tasks.find(function (t) { return t.id === id; });
+        if (task) {
+          task.completed = !task.completed;
+          App.Storage.set('tld_tasks', state.tasks);
+        }
+        render();
+      }
+
+      /**
+       * Remove the task with the given id from the list.
+       * Persists and re-renders.
+       * @param {string} id
+       */
+      function deleteTask(id) {
+        state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
+        App.Storage.set('tld_tasks', state.tasks);
+        render();
+      }
+
+      /**
+       * Return a copy of the task array, sorted according to state.sortOrder.
+       * "default"        → tasks sorted by createdAt ascending (insertion order)
+       * "completed-last" → incomplete tasks (sorted by createdAt) followed by
+       *                    completed tasks (sorted by createdAt); stable within
+       *                    each group (Req 11.2, 11.3).
+       * @returns {Task[]}
+       */
+      function getSortedTasks() {
+        if (state.sortOrder === 'completed-last') {
+          const incomplete = state.tasks
+            .filter(function (t) { return !t.completed; })
+            .slice()
+            .sort(function (a, b) { return a.createdAt - b.createdAt; });
+          const completed = state.tasks
+            .filter(function (t) { return t.completed; })
+            .slice()
+            .sort(function (a, b) { return a.createdAt - b.createdAt; });
+          return incomplete.concat(completed);
+        }
+        // "default": insertion order preserved by sorting on createdAt ascending
+        return state.tasks.slice().sort(function (a, b) { return a.createdAt - b.createdAt; });
+      }
+
+      /**
+       * Render the task list DOM from the current state.
+       * - Shows/hides the placeholder based on whether tasks exist.
+       * - Builds <li> elements from getSortedTasks(), each containing:
+       *     • A checkbox reflecting the completed state
+       *     • A label <span> (with strikethrough when completed) OR an edit <input>
+       *       when state.editingId matches the task's id
+       *     • An edit button
+       *     • A delete button
+       * - All events are delegated to the #todo-list container.
+       */
+      function render() {
+        const elList        = document.getElementById('todo-list');
+        const elPlaceholder = document.getElementById('todo-placeholder');
+
+        if (!elList) return;
+
+        const sorted = getSortedTasks();
+
+        // Show/hide placeholder (Req 3.5)
+        if (elPlaceholder) {
+          elPlaceholder.style.display = sorted.length === 0 ? '' : 'none';
+        }
+
+        // Build the list HTML
+        const html = sorted.map(function (task) {
+          const escapedId    = task.id.replace(/"/g, '&quot;');
+          const escapedLabel = task.label
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+
+          // Decide whether to render the edit input or the label span
+          let contentHtml;
+          if (state.editingId === task.id) {
+            // Edit mode: render a pre-filled text input (Req 4.1)
+            contentHtml =
+              '<input ' +
+                'class="todo-edit-input" ' +
+                'type="text" ' +
+                'data-edit-id="' + escapedId + '" ' +
+                'value="' + escapedLabel + '" ' +
+                'maxlength="255" ' +
+                'aria-label="Edit task: ' + escapedLabel + '" ' +
+              '/>';
+          } else {
+            // Normal mode: render a label span with strikethrough when completed (Req 4.6)
+            const strikeStyle = task.completed
+              ? ' style="text-decoration:line-through; color:var(--color-text-muted)"'
+              : '';
+            contentHtml =
+              '<span class="todo-label"' + strikeStyle + '>' +
+                escapedLabel +
+              '</span>';
+          }
+
+          return (
+            '<li data-id="' + escapedId + '" style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--color-border)">' +
+              // Checkbox — reflects completed state (Req 3.4, 4.5)
+              '<input ' +
+                'type="checkbox" ' +
+                'class="todo-checkbox" ' +
+                'data-id="' + escapedId + '" ' +
+                (task.completed ? 'checked ' : '') +
+                'aria-label="Mark task complete: ' + escapedLabel + '" ' +
+              '/>' +
+              // Label or edit input
+              '<span style="flex:1;min-width:0">' + contentHtml + '</span>' +
+              // Edit button (Req 4.1)
+              '<button ' +
+                'class="btn-ghost todo-edit-btn" ' +
+                'data-id="' + escapedId + '" ' +
+                'aria-label="Edit task: ' + escapedLabel + '" ' +
+                'style="padding:0.25rem 0.5rem;font-size:0.8rem" ' +
+              '>✏</button>' +
+              // Delete button (Req 4.7)
+              '<button ' +
+                'class="btn-danger todo-delete-btn" ' +
+                'data-id="' + escapedId + '" ' +
+                'aria-label="Delete task: ' + escapedLabel + '" ' +
+                'style="padding:0.25rem 0.5rem;font-size:0.8rem" ' +
+              '>🗑</button>' +
+            '</li>'
+          );
+        }).join('');
+
+        elList.innerHTML = html;
+
+        // If we just rendered an edit input, focus it immediately
+        if (state.editingId) {
+          const editInput = elList.querySelector('.todo-edit-input');
+          if (editInput) {
+            editInput.focus();
+            // Move cursor to end of the pre-filled value
+            const len = editInput.value.length;
+            editInput.setSelectionRange(len, len);
+          }
+        }
+
+        // Register delegated event listeners only once on the list container.
+        // We use a flag on the element to avoid re-attaching on every render.
+        if (!elList._todoListenerAttached) {
+          elList._todoListenerAttached = true;
+
+          // ── Click delegation: checkbox, edit button, delete button ────────────
+          elList.addEventListener('click', function (e) {
+            // Checkbox toggle (Req 4.5)
+            if (e.target.classList.contains('todo-checkbox')) {
+              const id = e.target.getAttribute('data-id');
+              if (id) toggleComplete(id);
+              return;
+            }
+
+            // Edit button — enter edit mode (Req 4.1)
+            if (e.target.classList.contains('todo-edit-btn') ||
+                e.target.closest('.todo-edit-btn')) {
+              const btn = e.target.closest('.todo-edit-btn') || e.target;
+              const id = btn.getAttribute('data-id');
+              if (id) {
+                state.editingId = id;
+                render();
+              }
+              return;
+            }
+
+            // Delete button (Req 4.7)
+            if (e.target.classList.contains('todo-delete-btn') ||
+                e.target.closest('.todo-delete-btn')) {
+              const btn = e.target.closest('.todo-delete-btn') || e.target;
+              const id = btn.getAttribute('data-id');
+              if (id) deleteTask(id);
+              return;
+            }
+          });
+
+          // ── Keyboard delegation: keydown on edit input ────────────────────────
+          elList.addEventListener('keydown', function (e) {
+            if (!e.target.classList.contains('todo-edit-input')) return;
+
+            const id = e.target.getAttribute('data-edit-id');
+
+            if (e.key === 'Enter') {
+              // Confirm edit (Req 4.2)
+              e.preventDefault();
+              if (id) editTask(id, e.target.value);
+            } else if (e.key === 'Escape') {
+              // Cancel edit (Req 4.4)
+              e.preventDefault();
+              state.editingId = null;
+              render();
+            }
+          });
+
+          // ── Blur delegation: confirm edit when input loses focus ──────────────
+          elList.addEventListener('focusout', function (e) {
+            if (!e.target.classList.contains('todo-edit-input')) return;
+
+            // Ignore blur caused by Escape — editingId will already be null
+            if (state.editingId === null) return;
+
+            const id = e.target.getAttribute('data-edit-id');
+            if (id) editTask(id, e.target.value);
+          });
+        }
+      }
+
+      function init() {
+        // Requirements 5.2, 5.3: load tasks from localStorage on startup.
+        // Treat null or any non-array value as an empty list — no error surfaced to user.
+        const saved = App.Storage.get('tld_tasks');
+        state.tasks = Array.isArray(saved) ? saved : [];
+
+        // Wire the add-task form (Requirements 3.1, 3.2)
+        const form  = document.getElementById('todo-add-form');
+        const input = document.getElementById('todo-input');
+        if (form && input) {
+          form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const raw = input.value;
+            addTask(raw);
+            // Only clear the input if the label was valid (addTask shows error and returns early otherwise)
+            if (validateLabel(raw).valid) {
+              input.value = '';
+            }
+          });
+        }
+
+        // Wire the sort select (Requirements 11.1, 11.2)
+        const sortEl = document.getElementById('todo-sort');
+        if (sortEl) {
+          // Set the select to match current state on load
+          sortEl.value = state.sortOrder;
+          sortEl.addEventListener('change', function () {
+            state.sortOrder = sortEl.value;
+            render();
+          });
+        }
+
+        // Render the loaded tasks immediately
+        render();
+      }
+
+      return { init, validateLabel, createTask, addTask, editTask, toggleComplete, deleteTask, render, getSortedTasks };
+    })();
+
+    // ─── App.QuickLinks ──────────────────────────────────────────────────────────
+    App.QuickLinks = (function () {
+      // ── Internal state ──────────────────────────────────────────────────────
+      const state = {
+        links: []
+      };
+
+      // ── Helper: generate a unique id ─────────────────────────────────────────
+      function generateId() {
+        return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+          ? crypto.randomUUID()
+          : Date.now().toString();
+      }
+
+      /**
+       * Validate a link label and URL before adding.
+       * - Label must be non-empty after trimming.
+       * - URL must begin with "http://" or "https://".
+       * @param {string} label
+       * @param {string} url
+       * @returns {{ valid: false, error: string } | { valid: true }}
+       */
+      function validateLink(label, url) {
+        const trimmedLabel = (label || '').trim();
+        if (trimmedLabel.length === 0) {
+          return { valid: false, error: 'Label required' };
+        }
+        const trimmedUrl = (url || '').trim();
+        if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+          return { valid: false, error: 'URL must start with http:// or https://' };
+        }
+        return { valid: true };
+      }
+
+      /**
+       * Add a new link to the collection.
+       * Validates input — shows inline error on failure via #links-error.
+       * On success: truncates label to 50 chars, creates a Link object, persists, re-renders.
+       * @param {string} label
+       * @param {string} url
+       */
+      function addLink(label, url) {
+        const result = validateLink(label, url);
+        const errorEl = document.getElementById('links-error');
+
+        if (!result.valid) {
+          if (errorEl) errorEl.textContent = result.error;
+          return;
+        }
+
+        // Clear any previous error
+        if (errorEl) errorEl.textContent = '';
+
+        // Truncate label to 50 characters (Req 7.6)
+        const truncatedLabel = (label || '').trim().slice(0, 50);
+
+        // Create the Link object (Req 7.2)
+        const link = {
+          id:    generateId(),
+          label: truncatedLabel,
+          url:   (url || '').trim(),
+          valid: true
+        };
+
+        state.links.push(link);
+
+        // Persist to localStorage (Req 8.1)
+        const saved = App.Storage.set('tld_links', state.links);
+        if (!saved) {
+          const errEl = document.getElementById('links-error');
+          if (errEl) errEl.textContent = '⚠ Could not save — storage may be full.';
+        }
+
+        render();
+      }
+
+      /**
+       * Delete a link by id.
+       * Filters it out of the array, persists the updated collection, re-renders.
+       * @param {string} id
+       */
+      function deleteLink(id) {
+        state.links = state.links.filter(function (link) {
+          return link.id !== id;
+        });
+
+        // Persist to localStorage (Req 8.1)
+        App.Storage.set('tld_links', state.links);
+
+        render();
+      }
+
+      /**
+       * Rebuild the #links-grid from state.links.
+       * - When empty: show #links-placeholder, clear grid.
+       * - When non-empty: hide placeholder, render one <button> per link.
+       *   Valid links open in a new tab on click; invalid links are disabled.
+       *   Each link entry also has a delete button with data-id attribute.
+       * Uses event delegation on #links-grid for delete clicks.
+       */
+      function render() {
+        const grid       = document.getElementById('links-grid');
+        const placeholder = document.getElementById('links-placeholder');
+        if (!grid) return;
+
+        // Clear previous contents
+        grid.innerHTML = '';
+
+        if (state.links.length === 0) {
+          // Show placeholder (Req 6.3)
+          if (placeholder) placeholder.style.display = '';
+          return;
+        }
+
+        // Hide placeholder (Req 6.3)
+        if (placeholder) placeholder.style.display = 'none';
+
+        state.links.forEach(function (link) {
+          // Wrapper span to group the link button + delete button
+          const wrapper = document.createElement('span');
+          wrapper.style.cssText = 'display:inline-flex;align-items:center;gap:0.25rem;';
+
+          // ── Link button ────────────────────────────────────────────────────
+          const btn = document.createElement('button');
+
+          // Truncate display label with ellipsis if > 50 chars (Req 6.1)
+          const displayLabel = link.label.length > 50
+            ? link.label.slice(0, 50) + '…'
+            : link.label;
+          btn.textContent = displayLabel;
+          btn.title       = link.label; // full label as tooltip
+
+          if (!link.valid) {
+            // Invalid URL: disable button (Req 6.4)
+            btn.disabled = true;
+            btn.style.cssText = 'opacity:0.45;cursor:not-allowed;';
+            btn.setAttribute('aria-disabled', 'true');
+          } else {
+            // Valid URL: open in new tab on click (Req 6.2)
+            btn.addEventListener('click', function () {
+              window.open(link.url, '_blank', 'noopener,noreferrer');
+            });
+          }
+
+          // ── Delete button ──────────────────────────────────────────────────
+          const delBtn = document.createElement('button');
+          delBtn.textContent = '×';
+          delBtn.className   = 'btn-danger';
+          delBtn.setAttribute('data-id', link.id);
+          delBtn.setAttribute('aria-label', 'Delete link ' + link.label);
+          delBtn.style.cssText = 'padding:0.25rem 0.5rem;font-size:0.85rem;line-height:1;';
+
+          wrapper.appendChild(btn);
+          wrapper.appendChild(delBtn);
+          grid.appendChild(wrapper);
+        });
+      }
+
+      /**
+       * Initialise Quick Links:
+       * 1. Load persisted links from localStorage (Req 8.2, 8.3).
+       * 2. Compute the `valid` flag for each loaded link (Req 6.4).
+       * 3. Render the initial state.
+       * 4. Wire the #links-add-form submit event.
+       * 5. Wire event delegation on #links-grid for delete button clicks.
+       */
+      function init() {
+        // ── 1. Load from storage (Req 8.2 / 8.3) ─────────────────────────────
+        const stored = App.Storage.get('tld_links');
+        if (Array.isArray(stored)) {
+          // Compute/recompute `valid` flag for each link at load time (Req 6.4)
+          state.links = stored.map(function (link) {
+            const url = (link.url || '').trim();
+            return {
+              id:    link.id    || generateId(),
+              label: link.label || '',
+              url:   url,
+              valid: url.startsWith('http://') || url.startsWith('https://')
+            };
+          });
+        }
+        // null or non-array → keep state.links as empty array (no error, Req 8.3)
+
+        // ── 2. Initial render ─────────────────────────────────────────────────
+        render();
+
+        // ── 3. Wire #links-add-form submit (Req 7.1–7.4, 8.1) ───────────────
+        const form       = document.getElementById('links-add-form');
+        const labelInput = document.getElementById('links-label-input');
+        const urlInput   = document.getElementById('links-url-input');
+
+        if (form && labelInput && urlInput) {
+          form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const label = labelInput.value;
+            const url   = urlInput.value;
+            const prevCount = state.links.length;
+            addLink(label, url);
+            // Clear inputs only when a link was actually added (success path)
+            if (state.links.length > prevCount) {
+              labelInput.value = '';
+              urlInput.value   = '';
+            }
+          });
+        }
+
+        // ── 4. Event delegation for delete buttons on #links-grid (Req 7.5) ──
+        const grid = document.getElementById('links-grid');
+        if (grid) {
+          grid.addEventListener('click', function (e) {
+            const target = e.target.closest('[data-id]');
+            if (target && target.tagName === 'BUTTON') {
+              deleteLink(target.getAttribute('data-id'));
+            }
+          });
+        }
+      }
+
+      return { init, validateLink, addLink, deleteLink, render };
+    })();
+
+    // ─── Bootstrap: initialise all modules after DOM is ready ───────────────────
+    document.addEventListener('DOMContentLoaded', function () {
+      App.Storage.init && App.Storage.init();
+      App.ThemeManager.init();
+      App.GreetingWidget.init();
+      App.FocusTimer.init();
+      App.TodoList.init();
+      App.QuickLinks.init();
+    });
+  </script>
+</body>
+</html>

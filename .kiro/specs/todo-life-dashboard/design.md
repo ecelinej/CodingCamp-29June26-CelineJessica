@@ -37,8 +37,9 @@ Since no module system is available, each widget's logic is wrapped in an **Imme
 window.App = {}           ← shared namespace
 App.Storage               ← localStorage abstraction layer
 App.GreetingWidget        ← greeting + clock logic
-App.FocusTimer            ← countdown timer logic
-App.TodoList              ← task list CRUD + sorting + persistence
+App.FocusTimer            ← countdown timer logic (with custom duration)
+App.TodoList              ← task list CRUD + sorting + persistence + duplicate check
+App.Stats                 ← productivity statistics tracking + persistence
 App.QuickLinks            ← link CRUD + persistence
 App.ThemeManager          ← theme toggle + persistence
 ```
@@ -82,12 +83,74 @@ App.Storage = {
 
 **LocalStorage keys:**
 
-| Key                   | Value type | Description                     |
-|-----------------------|------------|---------------------------------|
-| `tld_tasks`           | Task[]     | Serialized task array           |
-| `tld_links`           | Link[]     | Serialized link array           |
-| `tld_theme`           | string     | `"light"` or `"dark"`           |
-| `tld_username`        | string     | User's display name             |
+| Key                    | Value type | Description                                              |
+|------------------------|------------|----------------------------------------------------------|
+| `tld_tasks`            | Task[]     | Serialized task array                                    |
+| `tld_links`            | Link[]     | Serialized link array                                    |
+| `tld_theme`            | string     | `"light"` or `"dark"`                                   |
+| `tld_username`         | string     | User's display name                                      |
+| `tld_stats`            | StatsData  | Productivity statistics (streak, totals, last-streak-date) |
+| `tld_timer_duration`   | number     | Custom Pomodoro duration in minutes                      |
+
+**KEYS constants** (all keys are registered as named constants inside `App.Storage.KEYS`):
+
+```js
+const KEYS = {
+  TASKS:          'tld_tasks',
+  LINKS:          'tld_links',
+  THEME:          'tld_theme',
+  USERNAME:       'tld_username',
+  STATS:          'tld_stats',
+  TIMER_DURATION: 'tld_timer_duration',
+};
+```
+
+---
+
+### App.Stats
+
+**Responsibilities:** Track and display productivity statistics (total completed, today's completed, daily streak). Reacts to task completion/uncompletion events emitted by `App.TodoList`. Persists via `App.Storage` using `KEYS.STATS`.
+
+**Public interface:**
+
+```js
+App.Stats.init()            // called once on DOMContentLoaded
+App.Stats.onTaskChanged()   // called by App.TodoList after any toggleComplete
+```
+
+**Internal state:**
+
+```js
+{
+  total:    number,         // all-time completed count (≥ 0)
+  today:    number,         // tasks completed on the current calendar day (≥ 0)
+  streak:   number,         // consecutive-day streak (≥ 0)
+  lastDate: string | null   // ISO date string "YYYY-MM-DD" of last streak increment
+}
+```
+
+**Streak logic (pure function):**
+
+```js
+function computeStreak(state, todayStr) → { streak: number, lastDate: string }
+```
+
+Rules:
+- `todayStr` = today's date as `"YYYY-MM-DD"` (derived from `new Date().toISOString().slice(0, 10)`)
+- If `state.lastDate === todayStr` → no change (streak already counted today)
+- If `state.lastDate` equals yesterday's ISO date → `streak + 1`, `lastDate = todayStr`
+- Otherwise (`lastDate` is `null` or older than yesterday) → `streak = 1`, `lastDate = todayStr`
+- Applied only on the **first** completion of the current calendar day
+
+**On load (stale streak check — Req 13.10):** After reading `tld_stats`, if `lastDate` is neither today nor yesterday, reset `streak` to `0` before rendering.
+
+**`onTaskChanged` logic:**
+
+1. Recount `total` and `today` from the live task array obtained from `App.TodoList` (or passed in via the call).
+2. If a task was just **completed** and today's completed count just incremented from 0 to 1, call `computeStreak` and update `streak` / `lastDate`.
+3. If a task was just **uncompleted**, decrement `total` and `today` (each floored at 0); leave `streak` unchanged.
+4. Persist via `App.Storage.set(App.Storage.KEYS.STATS, state)`.
+5. Re-render the `#widget-stats` DOM.
 
 ---
 
@@ -126,7 +189,7 @@ function getGreeting(hour) → "Good Morning" | "Good Afternoon" | "Good Evening
 
 ### App.FocusTimer
 
-**Responsibilities:** 25-minute countdown, start/stop/reset controls, completion notification.
+**Responsibilities:** Countdown timer with start/stop/reset controls, configurable duration, completion notification.
 
 **Public interface:**
 
@@ -134,23 +197,39 @@ function getGreeting(hour) → "Good Morning" | "Good Afternoon" | "Good Evening
 App.FocusTimer.init()   // called once on DOMContentLoaded
 ```
 
-**Internal state:**
+**Internal state (updated for custom duration — Req 14):**
 
 ```js
 {
-  remaining: number,    // seconds remaining (0 – 1500)
-  running: boolean,
-  intervalId: number | null
+  durationMinutes: number,   // 5–60, default 25 (persisted via KEYS.TIMER_DURATION)
+  remaining:       number,   // seconds — initialized to durationMinutes × 60
+  running:         boolean,
+  intervalId:      number | null
 }
 ```
 
-**Timer tick:** `setInterval(tick, 1000)` while running. Each tick decrements `remaining` by 1 and re-renders. At `remaining === 0`, the timer stops and shows a completion message.
+**Updated `reset()` behavior:** Restores `remaining` to `state.durationMinutes × 60` (not always `1500`), in accordance with Req 14.5.
+
+**Duration change handler (new — Req 14.3, 14.4, 14.6, 14.7):**
+
+Triggered on `blur` or `Enter` on the `#timer-duration` numeric input:
+
+1. Read raw value from input.
+2. Parse as integer; clamp to `[5, 60]`: `Math.max(5, Math.min(60, parsed))`.
+3. Set `state.durationMinutes = clamped`.
+4. Persist via `App.Storage.set(App.Storage.KEYS.TIMER_DURATION, clamped)`.
+5. If timer is currently running: call `stop()` first (sets `running = false`).
+6. Call `reset()` to apply the new duration to `remaining` and update the display.
+
+**New storage key:** `App.Storage.KEYS.TIMER_DURATION` (`"tld_timer_duration"`).
+
+**On load:** Read `tld_timer_duration`; if the stored value is a number in `[5, 60]` use it, otherwise default to `25`. Initialize `remaining = durationMinutes × 60`.
 
 ---
 
 ### App.TodoList
 
-**Responsibilities:** Add/edit/delete/complete tasks, sort tasks, persist to localStorage.
+**Responsibilities:** Add/edit/delete/complete tasks, sort tasks, persist to localStorage, notify `App.Stats` on completion changes.
 
 **Public interface:**
 
@@ -177,6 +256,14 @@ toggleComplete(id)       → void
 deleteTask(id)           → void
 setSortOrder(order)      → void
 ```
+
+**Updated `addTask` flow (Req 15):**
+
+1. Call `validateLabel(label)` — reject if invalid (empty/whitespace/too long).
+2. **Duplicate check:** `state.tasks.some(t => t.label.trim().toLowerCase() === trimmed.toLowerCase())` — if `true`, set `#todo-error` to `"Task already exists."` and return without creating the task (Req 15.1, 15.2).
+3. If no duplicate: create task object, push to `state.tasks`, persist, re-render.
+
+**Stats integration (Req 13.2):** After `toggleComplete(id)` mutates the task and re-renders, call `App.Stats.onTaskChanged()` so all three productivity metrics are updated immediately.
 
 **Validation (pure functions):**
 
@@ -266,6 +353,18 @@ type Theme = "light" | "dark"   // stored as string in localStorage
 
 ```js
 type UserName = string | null   // null when not set; 1 – 50 chars when set
+```
+
+### StatsData
+
+```js
+// StatsData — persisted under App.Storage.KEYS.STATS ("tld_stats")
+{
+  total:    number,         // all-time completed count (≥ 0)
+  today:    number,         // tasks completed on the current calendar day (≥ 0)
+  streak:   number,         // consecutive-day streak (≥ 0)
+  lastDate: string | null   // ISO "YYYY-MM-DD" of last streak increment, or null
+}
 ```
 
 ---
@@ -362,6 +461,38 @@ type UserName = string | null   // null when not set; 1 – 50 chars when set
 
 ---
 
+### Property 12: Stats counts never go negative
+
+*For any* sequence of `toggleComplete` calls on any task list (regardless of initial completion states, order of toggling, or how many times a task is uncompleted), `state.total` and `state.today` in `App.Stats` SHALL never drop below zero.
+
+**Validates: Requirements 13.8**
+
+---
+
+### Property 13: Streak never double-increments on the same calendar day
+
+*For any* `App.Stats` state and any number of task completions that all occur on the same calendar day (i.e., `computeStreak` is called multiple times with the same `todayStr`), the `streak` value SHALL be incremented at most once relative to its value at the start of that day.
+
+**Validates: Requirements 13.5**
+
+---
+
+### Property 14: Duplicate task detection is case- and whitespace-insensitive
+
+*For any* pair of strings `(a, b)` such that `a.trim().toLowerCase() === b.trim().toLowerCase()`, if a task with label `a` already exists in the task list then submitting label `b` SHALL always be rejected with an error message, and the task count SHALL remain unchanged.
+
+**Validates: Requirements 15.1, 15.2**
+
+---
+
+### Property 15: Custom Pomodoro duration clamping
+
+*For any* integer input `n` entered into the duration field, the applied duration stored in `state.durationMinutes` and persisted to `App.Storage.KEYS.TIMER_DURATION` SHALL equal `Math.max(5, Math.min(60, n))`. The displayed and effective timer duration SHALL never be outside the range `[5, 60]` minutes.
+
+**Validates: Requirements 14.1, 14.4**
+
+---
+
 ## Error Handling
 
 ### localStorage Failures
@@ -413,6 +544,10 @@ Each correctness property (Properties 1–11 above) maps to one property-based t
 | 7 (localStorage round-trip) | Task arrays with varied content | Validates JSON serialize/deserialize correctness |
 | 8 (URL validation) | Arbitrary URL strings | Catches edge cases: `ftp://`, `javascript:`, `//`, empty |
 | 9 (Label truncation) | Label strings of length 0–200 | Ensures no label ever exceeds 50 chars |
+| 12 (Stats non-negative) | Task lists with many toggle sequences | Catches off-by-one and floor-at-zero bugs |
+| 13 (Streak no double-increment) | Many completions on same day | Validates `computeStreak` idempotence within a day |
+| 14 (Duplicate detection) | All case/whitespace string pairs | Catches normalization edge cases (leading spaces, UPPER, mixed) |
+| 15 (Duration clamping) | All integers including negatives and large numbers | Validates clamp function at all boundaries |
 
 ### Unit / Example-Based Tests
 
@@ -426,6 +561,15 @@ For behaviors that do not benefit from input variation:
 - **Theme default**: Verify `"light"` is applied when no theme key is in storage.
 - **Username default**: Verify greeting renders without a name when no username is in storage.
 - **localStorage write failure**: Mock `localStorage.setItem` to throw, verify error message appears.
+- **Stats load — valid data**: Verify `App.Stats` initializes `total`, `today`, `streak` from stored `StatsData`.
+- **Stats load — missing/invalid data**: Verify all three metrics initialize to `0`.
+- **Stats load — stale streak**: Verify `streak` is reset to `0` when `lastDate` is older than yesterday.
+- **Duration load — saved value**: Verify timer initializes to the saved duration from `tld_timer_duration`.
+- **Duration load — no saved value**: Verify timer defaults to `25` minutes.
+- **Duration change while running**: Verify timer stops and resets to new duration.
+- **Duration change while stopped**: Verify display updates without starting countdown.
+- **Duplicate rejection — error message**: Verify `#todo-error` shows `"Task already exists."` on exact-match duplicate.
+- **Stats write failure**: Mock `App.Storage.set` returning `false`; verify in-memory stats unchanged and no visible error.
 
 ### Testing Structure
 
@@ -435,3 +579,56 @@ Since there is no build tool, tests can be run in one of two ways:
 2. **Node.js + Jest**: A minimal `package.json` with `jest` + `jsdom` + `fast-check` for CI-friendly runs. Pure-logic functions are extracted into a testable form by importing the script under `jsdom`.
 
 The recommended approach for this project is **option 1** (in-browser), matching the no-build-tool constraint.
+
+---
+
+## DOM / HTML Additions
+
+The following new HTML elements are required for Requirements 13–14. They follow the existing Glass Card / widget pattern and IIFE module conventions.
+
+### Productivity Stats widget (`#widget-stats`)
+
+Insert a new `<section>` **before** `#widget-todo` in the dashboard grid:
+
+```html
+<!-- ─── Productivity Stats Widget ─── -->
+<section class="widget" id="widget-stats" aria-label="Productivity statistics">
+  <p class="widget-title">Stats</p>
+  <div class="stats-grid">
+    <div class="stat-item">
+      <span class="stat-label">All-time completed</span>
+      <span class="stat-value" id="stats-total" aria-live="polite">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Completed today</span>
+      <span class="stat-value" id="stats-today" aria-live="polite">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Daily streak</span>
+      <span class="stat-value" id="stats-streak" aria-live="polite">0</span>
+    </div>
+  </div>
+</section>
+```
+
+All three `<span>` value elements carry `aria-live="polite"` so screen readers announce metric changes after a task is toggled (Req 16.4).
+
+### Focus Timer duration input (`#timer-duration`)
+
+Add a numeric input row inside `#widget-timer`, rendered between the timer display and the controls row:
+
+```html
+<div class="timer-duration-row">
+  <label for="timer-duration">Duration (min):</label>
+  <input
+    type="number"
+    id="timer-duration"
+    min="5"
+    max="60"
+    value="25"
+    aria-label="Set focus timer duration in minutes"
+  />
+</div>
+```
+
+The input is wired by `App.FocusTimer.init()` — on `blur` and on `keydown Enter`, the duration change handler clamps, applies, and persists the value.

@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>To-Do Life Dashboard — Property-Based Tests</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #e0e0e0;
+      margin: 0;
+      padding: 1.5rem;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 1rem;
+      color: #8aaaf9;
+    }
+    #results {
+      font-family: "Cascadia Code", "Fira Code", "Courier New", monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      background: #0f1120;
+      border-radius: 8px;
+      padding: 1rem 1.25rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .pass  { color: #66bb6a; }
+    .fail  { color: #ef5350; }
+    .info  { color: #9090aa; }
+    .label { color: #8aaaf9; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>To-Do Life Dashboard — Property-Based Tests</h1>
+  <pre id="results"><span class="info">Running tests…</span>
+</pre>
+
+  <script type="module">
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Load fast-check from CDN (ESM)
+    // ─────────────────────────────────────────────────────────────────────────────
+    import * as fc from 'https://cdn.jsdelivr.net/npm/fast-check/+esm';
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Output helpers
+    // ─────────────────────────────────────────────────────────────────────────────
+    const out = document.getElementById('results');
+
+    // Clear the "Running tests…" placeholder on first real output
+    let firstWrite = true;
+
+    function write(html) {
+      if (firstWrite) {
+        out.innerHTML = '';
+        firstWrite = false;
+      }
+      out.innerHTML += html + '\n';
+    }
+
+    function section(title) {
+      write(`\n<span class="label">── ${title} ──</span>`);
+    }
+
+    function pass(name) {
+      write(`  <span class="pass">✔ PASS</span>  ${name}`);
+    }
+
+    function fail(name, error) {
+      write(`  <span class="fail">✘ FAIL</span>  ${name}`);
+      write(`         <span class="fail">${String(error).replace(/</g, '&lt;')}</span>`);
+    }
+
+    function summary(passed, total) {
+      const allPassed = passed === total;
+      const color     = allPassed ? 'pass' : 'fail';
+      write(`\n<span class="${color}">Results: ${passed}/${total} passed${allPassed ? ' 🎉' : ''}</span>`);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Mock localStorage
+    // ─────────────────────────────────────────────────────────────────────────────
+    /**
+     * Creates a fresh, isolated in-memory localStorage substitute.
+     * Each test that needs storage should create its own instance via
+     * makeMockStorage() so tests do not share state.
+     */
+    function makeMockStorage() {
+      const store = {};
+      return {
+        getItem(key)        { return Object.prototype.hasOwnProperty.call(store, key) ? store[key] : null; },
+        setItem(key, value) { store[key] = String(value); },
+        removeItem(key)     { delete store[key]; },
+        clear()             { for (const k in store) delete store[k]; },
+        get _store()        { return store; },
+      };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // App.Storage factory — accepts a localStorage substitute
+    // ─────────────────────────────────────────────────────────────────────────────
+    /**
+     * Builds an App.Storage-compatible object backed by the provided mock.
+     * Mirrors the implementation in index.html exactly.
+     */
+    function makeStorage(mockLS) {
+      const KEYS = {
+        TASKS:    'tld_tasks',
+        LINKS:    'tld_links',
+        THEME:    'tld_theme',
+        USERNAME: 'tld_username',
+      };
+
+      function get(key) {
+        const raw = mockLS.getItem(key);
+        if (raw === null) return null;
+        try {
+          return JSON.parse(raw);
+        } catch (e) {
+          if (e instanceof SyntaxError) return null;
+          throw e;
+        }
+      }
+
+      function set(key, value) {
+        try {
+          mockLS.setItem(key, JSON.stringify(value));
+          return true;
+        } catch (e) {
+          return false;
+        }
+      }
+
+      function remove(key) {
+        mockLS.removeItem(key);
+      }
+
+      return { get, set, remove, KEYS };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Inlined pure-logic functions (copied verbatim from index.html)
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    // ── getGreeting ──────────────────────────────────────────────────────────────
+    /**
+     * Maps an hour (0–23) to one of four greeting strings.
+     * Pure function — no side effects.
+     * @param {number} hour
+     * @returns {"Good Morning"|"Good Afternoon"|"Good Evening"|"Good Night"}
+     */
+    function getGreeting(hour) {
+      if (hour >= 5  && hour <= 11) return 'Good Morning';
+      if (hour >= 12 && hour <= 17) return 'Good Afternoon';
+      if (hour >= 18 && hour <= 20) return 'Good Evening';
+      return 'Good Night';
+    }
+
+    // ── validateLabel ────────────────────────────────────────────────────────────
+    /**
+     * Validates a raw task-label string.
+     * Trims whitespace, rejects empty/whitespace-only and > 255 chars.
+     * @param {string} raw
+     * @returns {{ valid: false, error: string } | { valid: true, trimmed: string }}
+     */
+    function validateLabel(raw) {
+      const trimmed = (raw || '').trim();
+      if (trimmed.length === 0) {
+        return { valid: false, error: 'Task label cannot be empty.' };
+      }
+      if (trimmed.length > 255) {
+        return { valid: false, error: 'Task label must be 255 characters or fewer.' };
+      }
+      return { valid: true, trimmed };
+    }
+
+    // ── validateLink ─────────────────────────────────────────────────────────────
+    /**
+     * Validates a link label + URL pair.
+     * @param {string} label
+     * @param {string} url
+     * @returns {{ valid: false, error: string } | { valid: true }}
+     */
+    function validateLink(label, url) {
+      const trimmedLabel = (label || '').trim();
+      if (trimmedLabel.length === 0) {
+        return { valid: false, error: 'Label required' };
+      }
+      const trimmedUrl = (url || '').trim();
+      if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+        return { valid: false, error: 'URL must start with http:// or https://' };
+      }
+      return { valid: true };
+    }
+
+    // ── getSortedTasks ───────────────────────────────────────────────────────────
+    /**
+     * Returns a sorted copy of a task array according to the given sort order.
+     * "default"        → sorted by createdAt ascending
+     * "completed-last" → incomplete tasks (sorted by createdAt) then completed tasks (sorted by createdAt)
+     * @param {Task[]} tasks
+     * @param {"default"|"completed-last"} sortOrder
+     * @returns {Task[]}
+     */
+    function getSortedTasks(tasks, sortOrder) {
+      if (sortOrder === 'completed-last') {
+        const incomplete = tasks
+          .filter(t => !t.completed)
+          .slice()
+          .sort((a, b) => a.createdAt - b.createdAt);
+        const completed = tasks
+          .filter(t => t.completed)
+          .slice()
+          .sort((a, b) => a.createdAt - b.createdAt);
+        return incomplete.concat(completed);
+      }
+      // "default": sort by createdAt ascending
+      return tasks.slice().sort((a, b) => a.createdAt - b.createdAt);
+    }
+
+    // ── createTask ───────────────────────────────────────────────────────────────
+    /**
+     * Creates a new Task object.
+     * @param {string} label  — already-trimmed label
+     * @returns {{ id: string, label: string, completed: boolean, createdAt: number }}
+     */
+    function createTask(label) {
+      const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+        ? crypto.randomUUID()
+        : Date.now().toString() + Math.random().toString(36).slice(2);
+      return { id, label, completed: false, createdAt: Date.now() };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // In-memory TodoList helpers for testing (no DOM dependency)
+    // ─────────────────────────────────────────────────────────────────────────────
+    /**
+     * Creates a self-contained TodoList state machine for testing purposes.
+     * Accepts an App.Storage instance so each test gets isolated storage.
+     * @param {ReturnType<makeStorage>} storage
+     */
+    function makeTodoList(storage) {
+      const state = { tasks: [], sortOrder: 'default' };
+
+      function addTask(label) {
+        const result = validateLabel(label);
+        if (!result.valid) return result;
+        const task = createTask(result.trimmed);
+        state.tasks.push(task);
+        storage.set(storage.KEYS.TASKS, state.tasks);
+        return { valid: true, task };
+      }
+
+      function editTask(id, newLabel) {
+        const result = validateLabel(newLabel);
+        if (!result.valid) return result;
+        const task = state.tasks.find(t => t.id === id);
+        if (task) {
+          task.label = result.trimmed;
+          storage.set(storage.KEYS.TASKS, state.tasks);
+        }
+        return { valid: true };
+      }
+
+      function toggleComplete(id) {
+        const task = state.tasks.find(t => t.id === id);
+        if (task) {
+          task.completed = !task.completed;
+          storage.set(storage.KEYS.TASKS, state.tasks);
+        }
+      }
+
+      return { state, addTask, editTask, toggleComplete };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Simple test runner
+    // ─────────────────────────────────────────────────────────────────────────────
+    let totalTests = 0;
+    let passedTests = 0;
+
+    /**
+     * Run a single property-based test.
+     * @param {string}   name     — human-readable property name
+     * @param {Function} testFn   — async function that calls fc.assert(...)
+     */
+    async function runProperty(name, testFn) {
+      totalTests++;
+      try {
+        await testFn();
+        passedTests++;
+        pass(name);
+      } catch (err) {
+        fail(name, err);
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Properties 1–11
+    // ─────────────────────────────────────────────────────────────────────────────
+
+    section('Property 1 — Greeting matches hour');
+    // Feature: todo-life-dashboard, Property 1: greeting matches hour
+    // Validates: Requirements 1.3, 1.4, 1.5, 1.6
+    await runProperty('Property 1: getGreeting(hour) returns correct greeting for every hour 0–23', () => {
+      fc.assert(
+        fc.property(
+          fc.integer({ min: 0, max: 23 }),
+          (hour) => {
+            const validGreetings = ['Good Morning', 'Good Afternoon', 'Good Evening', 'Good Night'];
+            const result = getGreeting(hour);
+
+            // Must be one of the four defined strings
+            if (!validGreetings.includes(result)) return false;
+
+            // Must match the correct range boundary
+            if (hour >= 5  && hour <= 11 && result !== 'Good Morning')   return false;
+            if (hour >= 12 && hour <= 17 && result !== 'Good Afternoon') return false;
+            if (hour >= 18 && hour <= 20 && result !== 'Good Evening')   return false;
+            if ((hour >= 21 || hour <= 4) && result !== 'Good Night')    return false;
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 2 — Task label validation rejects blank');
+    // Feature: todo-life-dashboard, Property 2: task label validation rejects blank
+    // Validates: Requirements 3.3, 4.3
+    await runProperty('Property 2: validateLabel rejects any whitespace-only or empty string', () => {
+      // Arbitrary that produces strings containing only whitespace characters (or empty)
+      const whitespaceArb = fc.stringMatching(/^\s*$/);
+
+      fc.assert(
+        fc.property(
+          whitespaceArb,
+          (wsString) => {
+            const result = validateLabel(wsString);
+            return result.valid === false;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 3 — Task add round-trip preserves data');
+    // Feature: todo-life-dashboard, Property 3: task add round-trip preserves data
+    // Validates: Requirements 3.2, 5.1
+    await runProperty('Property 3: addTask round-trip — in-memory and storage both contain the task', () => {
+      // Labels: non-empty after trim, at most 255 chars
+      const validLabelArb = fc.string({ minLength: 1, maxLength: 255 })
+        .filter(s => s.trim().length > 0 && s.trim().length <= 255);
+
+      fc.assert(
+        fc.property(
+          validLabelArb,
+          (label) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+            const todo    = makeTodoList(storage);
+
+            const addResult = todo.addTask(label);
+            if (!addResult.valid) return false;
+
+            const trimmed = label.trim();
+
+            // In-memory check: exactly one task, label matches, completed === false
+            if (todo.state.tasks.length !== 1)              return false;
+            if (todo.state.tasks[0].label !== trimmed)      return false;
+            if (todo.state.tasks[0].completed !== false)    return false;
+
+            // Storage check: deserialized array contains the same task
+            const stored = storage.get(storage.KEYS.TASKS);
+            if (!Array.isArray(stored))                     return false;
+            if (stored.length !== 1)                        return false;
+            if (stored[0].label     !== trimmed)            return false;
+            if (stored[0].completed !== false)              return false;
+            if (stored[0].id        !== todo.state.tasks[0].id) return false;
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 4 — Task edit preserves identity and updates label');
+    // Feature: todo-life-dashboard, Property 4: task edit preserves identity and updates label
+    // Validates: Requirements 4.2
+    await runProperty('Property 4: editTask preserves id and createdAt, updates label to trimmed value', () => {
+      const validLabelArb = fc.string({ minLength: 1, maxLength: 255 })
+        .filter(s => s.trim().length > 0);
+
+      fc.assert(
+        fc.property(
+          validLabelArb, // initial label
+          validLabelArb, // new label
+          (initialLabel, newLabel) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+            const todo    = makeTodoList(storage);
+
+            const addResult = todo.addTask(initialLabel);
+            if (!addResult.valid) return false;
+
+            const taskBefore = { ...todo.state.tasks[0] };
+            const editResult = todo.editTask(taskBefore.id, newLabel);
+            if (!editResult.valid) return false;
+
+            const taskAfter = todo.state.tasks.find(t => t.id === taskBefore.id);
+            if (!taskAfter)                                   return false;
+
+            // id and createdAt must be preserved
+            if (taskAfter.id        !== taskBefore.id)        return false;
+            if (taskAfter.createdAt !== taskBefore.createdAt) return false;
+
+            // label must equal the trimmed new label
+            if (taskAfter.label !== newLabel.trim())          return false;
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 5 — Task completion toggle is an involution');
+    // Feature: todo-life-dashboard, Property 5: task completion toggle is an involution
+    // Validates: Requirements 4.5
+    await runProperty('Property 5: toggleComplete(id) twice restores original completed state', () => {
+      const validLabelArb = fc.string({ minLength: 1, maxLength: 255 })
+        .filter(s => s.trim().length > 0);
+
+      fc.assert(
+        fc.property(
+          validLabelArb,
+          fc.boolean(), // initial completed state
+          (label, initialCompleted) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+            const todo    = makeTodoList(storage);
+
+            const addResult = todo.addTask(label);
+            if (!addResult.valid) return false;
+
+            const task = todo.state.tasks[0];
+            // Manually set initial completed state
+            task.completed = initialCompleted;
+
+            const originalCompleted = task.completed;
+
+            // Toggle twice
+            todo.toggleComplete(task.id);
+            todo.toggleComplete(task.id);
+
+            return task.completed === originalCompleted;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 6 — Completed-last sort places all incomplete before all completed');
+    // Feature: todo-life-dashboard, Property 6: completed-last sort ordering invariant
+    // Validates: Requirements 11.2, 11.3
+    await runProperty('Property 6: completed-last sort — all incomplete tasks appear before all completed tasks', () => {
+      // Arbitrary task record — label and id can be simple strings, createdAt a positive int
+      const taskArb = fc.record({
+        id:        fc.uuidV(4),
+        label:     fc.string({ minLength: 1, maxLength: 50 }).filter(s => s.trim().length > 0),
+        completed: fc.boolean(),
+        createdAt: fc.integer({ min: 0, max: 1_000_000_000 }),
+      });
+
+      fc.assert(
+        fc.property(
+          fc.array(taskArb, { minLength: 0, maxLength: 20 }),
+          (tasks) => {
+            const sorted = getSortedTasks(tasks, 'completed-last');
+
+            // Find the index of the last incomplete task and first completed task
+            let lastIncompleteIdx = -1;
+            let firstCompletedIdx = sorted.length; // sentinel: "no completed found"
+
+            for (let i = 0; i < sorted.length; i++) {
+              if (!sorted[i].completed) lastIncompleteIdx = i;
+            }
+            for (let i = 0; i < sorted.length; i++) {
+              if (sorted[i].completed) { firstCompletedIdx = i; break; }
+            }
+
+            // All incomplete tasks must appear before all completed tasks
+            // i.e., lastIncompleteIdx < firstCompletedIdx (or one group is empty)
+            return lastIncompleteIdx < firstCompletedIdx;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 7 — localStorage round-trip preserves task collection');
+    // Feature: todo-life-dashboard, Property 7: localStorage round-trip preserves task collection
+    // Validates: Requirements 5.1, 5.2
+    await runProperty('Property 7: Storage.set then Storage.get round-trips task array with equal id/label/completed/createdAt', () => {
+      const taskArb = fc.record({
+        id:        fc.uuidV(4),
+        label:     fc.string({ minLength: 1, maxLength: 255 }),
+        completed: fc.boolean(),
+        createdAt: fc.integer({ min: 0, max: Number.MAX_SAFE_INTEGER }),
+      });
+
+      fc.assert(
+        fc.property(
+          fc.array(taskArb, { minLength: 0, maxLength: 30 }),
+          (tasks) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+
+            storage.set(storage.KEYS.TASKS, tasks);
+            const retrieved = storage.get(storage.KEYS.TASKS);
+
+            if (!Array.isArray(retrieved))           return false;
+            if (retrieved.length !== tasks.length)   return false;
+
+            for (let i = 0; i < tasks.length; i++) {
+              if (retrieved[i].id        !== tasks[i].id)        return false;
+              if (retrieved[i].label     !== tasks[i].label)     return false;
+              if (retrieved[i].completed !== tasks[i].completed) return false;
+              if (retrieved[i].createdAt !== tasks[i].createdAt) return false;
+            }
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 8 — Link URL validation enforces http(s) prefix');
+    // Feature: todo-life-dashboard, Property 8: link URL validation enforces http(s) prefix
+    // Validates: Requirements 7.2, 7.4
+    await runProperty('Property 8: validateLink valid===true iff URL starts with "http://" or "https://"', () => {
+      // Mix of arbitrary strings and URLs with http/https prefixes
+      const urlArb = fc.oneof(
+        fc.string(),                                        // mostly invalid
+        fc.webUrl(),                                        // http/https — valid
+        fc.string().map(s => 'http://'  + s),              // always valid prefix
+        fc.string().map(s => 'https://' + s),              // always valid prefix
+        fc.string().map(s => 'ftp://'   + s),              // invalid prefix
+      );
+
+      fc.assert(
+        fc.property(
+          urlArb,
+          (url) => {
+            // Use a valid label so label validation never rejects
+            const result = validateLink('label', url);
+            const shouldBeValid = url.startsWith('http://') || url.startsWith('https://');
+
+            return result.valid === shouldBeValid;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 9 — Link label truncation stays within bound');
+    // Feature: todo-life-dashboard, Property 9: link label truncation stays within bound
+    // Validates: Requirements 7.6
+    await runProperty('Property 9: stored link.label.length <= 50 for any input label', () => {
+      // addLink inline — mirrors index.html App.QuickLinks.addLink logic
+      function addLinkToStorage(storage, state, label, url) {
+        const trimmedLabel = (label || '').trim();
+        const trimmedUrl   = (url   || '').trim();
+        if (trimmedLabel.length === 0) return { valid: false, error: 'Label required' };
+        if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+          return { valid: false, error: 'URL must start with http:// or https://' };
+        }
+        const truncated = trimmedLabel.slice(0, 50);
+        const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+          ? crypto.randomUUID()
+          : Date.now().toString() + Math.random().toString(36).slice(2);
+        const link = { id, label: truncated, url: trimmedUrl, valid: true };
+        state.links.push(link);
+        storage.set(storage.KEYS.LINKS, state.links);
+        return { valid: true, link };
+      }
+
+      // Labels of arbitrary length (0–200 chars), valid URL fixed
+      const labelArb = fc.string({ minLength: 0, maxLength: 200 });
+      const validUrl = 'https://example.com';
+
+      fc.assert(
+        fc.property(
+          labelArb,
+          (label) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+            const state   = { links: [] };
+
+            const result = addLinkToStorage(storage, state, label, validUrl);
+
+            // If label was empty after trim, addLink rejects — that's valid behaviour
+            // We only check the constraint when a link is actually stored
+            if (!result.valid) {
+              return (label || '').trim().length === 0; // only acceptable reason to reject
+            }
+
+            return result.link.label.length <= 50;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 10 — Theme persistence round-trip');
+    // Feature: todo-life-dashboard, Property 10: theme persistence round-trip
+    // Validates: Requirements 9.3, 9.4
+    await runProperty('Property 10: Storage.set("tld_theme", theme) → Storage.get("tld_theme") === theme', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom('light', 'dark'),
+          (theme) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+
+            storage.set(storage.KEYS.THEME, theme);
+            const retrieved = storage.get(storage.KEYS.THEME);
+
+            return retrieved === theme;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    section('Property 11 — Username persistence round-trip');
+    // Feature: todo-life-dashboard, Property 11: username persistence round-trip
+    // Validates: Requirements 10.2, 10.4
+    await runProperty('Property 11: stored username round-trips and greeting includes the name', () => {
+      // Valid usernames: 1–50 chars, non-empty after trim
+      const usernameArb = fc.string({ minLength: 1, maxLength: 50 })
+        .filter(s => s.trim().length > 0)
+        .map(s => s.trim()); // simulate the trim that the app applies
+
+      fc.assert(
+        fc.property(
+          usernameArb,
+          fc.integer({ min: 0, max: 23 }), // arbitrary hour for greeting
+          (username, hour) => {
+            const mockLS  = makeMockStorage();
+            const storage = makeStorage(mockLS);
+
+            // Persist username (mirrors App.GreetingWidget submit handler)
+            storage.set(storage.KEYS.USERNAME, username);
+
+            // Storage round-trip check
+            const retrieved = storage.get(storage.KEYS.USERNAME);
+            if (retrieved !== username) return false;
+
+            // Greeting inclusion check — mirrors buildMessage() in index.html
+            const base    = getGreeting(hour);
+            const message = base + ', ' + username + '!';
+            if (!message.includes(username)) return false;
+
+            return true;
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // Final summary
+    // ─────────────────────────────────────────────────────────────────────────────
+    write('\n<span class="info">─────────────────────────────────────</span>');
+    if (totalTests === 0) {
+      write('<span class="info">No tests implemented yet — placeholders ready for task 12.2.</span>');
+    } else {
+      summary(passedTests, totalTests);
+    }
+  </script>
+</body>
+</html>

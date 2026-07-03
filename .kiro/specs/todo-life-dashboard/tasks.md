@@ -111,14 +111,14 @@ Implement a self-contained single-page web application (`index.html`) with embed
     - For any task, calling `toggleComplete(id)` twice returns `completed` to its original value
     - **Validates: Requirements 4.5**
 
-- [ ] 7. Implement App.TodoList — rendering and edit mode
-  - [ ] 7.1 Implement `render()` and inline edit mode
+- [x] 7. Implement App.TodoList — rendering and edit mode
+  - [x] 7.1 Implement `render()` and inline edit mode
     - `render()`: if `state.tasks` is empty show placeholder message; otherwise build task items using `getSortedTasks()` — each item has a checkbox (reflects `completed`), label text with strikethrough when `completed === true`, edit button, and delete button
     - When edit button is clicked, replace label with a pre-filled `<input>`, confirm on Enter / blur, cancel on Escape; set `state.editingId`
     - Use event delegation on the task list container for all click and keyboard events
     - _Requirements: 3.4, 3.5, 4.1, 4.4, 4.6, 4.7_
 
-  - [ ] 7.2 Implement task sorting (completed-last)
+  - [x] 7.2 Implement task sorting (completed-last)
     - Implement `getSortedTasks()`: if `state.sortOrder === "default"` return tasks sorted by `createdAt` ascending; if `"completed-last"` return incomplete tasks (sorted by `createdAt`) followed by completed tasks (sorted by `createdAt`)
     - Add sort control (select or button group) to the HTML with options "Default" and "Completed Last", defaulting to "Default"
     - On sort control change, update `state.sortOrder` and re-render within 300 ms
@@ -129,12 +129,12 @@ Implement a self-contained single-page web application (`index.html`) with embed
     - For any mixed-completion task array, after applying "completed-last", every `completed === false` task appears at a lower index than every `completed === true` task, with relative insertion order preserved within each group
     - **Validates: Requirements 11.2, 11.3**
 
-- [ ] 8. Implement App.TodoList — persistence and load
-  - [ ] 8.1 Implement load-from-storage in `TodoList.init()`
+- [x] 8. Implement App.TodoList — persistence and load
+  - [x] 8.1 Implement load-from-storage in `TodoList.init()`
     - In `init()`: call `App.Storage.get("tld_tasks")`, treat `null` or non-array as empty list (no error surfaced to user), set `state.tasks`, then call `render()`
     - _Requirements: 5.2, 5.3_
 
-- [ ] 9. Checkpoint — Core widgets functional
+- [x] 9. Checkpoint — Core widgets functional
   - Ensure all tests pass, ask the user if questions arise.
 
 - [x] 10. Implement App.QuickLinks — core logic and validation
@@ -154,21 +154,21 @@ Implement a self-contained single-page web application (`index.html`) with embed
     - For any label string of arbitrary length with a valid URL, after `addLink`, the stored link's label has length ≤ 50
     - **Validates: Requirements 7.6**
 
-- [ ] 11. Implement App.QuickLinks — rendering and persistence
-  - [ ] 11.1 Implement `render()` and load-from-storage
+- [x] 11. Implement App.QuickLinks — rendering and persistence
+  - [x] 11.1 Implement `render()` and load-from-storage
     - `render()`: if `state.links` is empty show placeholder message; otherwise render each link as a `<button>` with label text truncated with ellipsis if > 50 chars, `target="_blank"` navigation on click
     - For links with `valid === false`, render button with `disabled` attribute and reduced-opacity / `not-allowed` cursor style; do not open new tab on click
     - In `init()`: `App.Storage.get("tld_links")`, treat `null` or non-array as empty (no error), compute `valid` flag for each loaded link, set `state.links`, call `render()`
     - _Requirements: 6.1, 6.2, 6.3, 6.4, 8.2, 8.3_
 
-- [ ] 12. Create the in-browser test harness
-  - [ ] 12.1 Create `test.html` with fast-check loaded from CDN
+- [x] 12. Create the in-browser test harness
+  - [x] 12.1 Create `test.html` with fast-check loaded from CDN
     - Create `test.html` that loads fast-check from CDN (`https://cdn.jsdelivr.net/npm/fast-check/+esm` or equivalent unpkg URL)
     - Import or inline the pure-logic functions under test (`getGreeting`, `validateLabel`, `validateLink`, `getSortedTasks`, `App.Storage` with a mock `localStorage`)
     - Add a `<pre id="results">` element where each test appends pass/fail lines
     - _Requirements: (testing infrastructure for all properties)_
 
-  - [ ]* 12.2 Write all 11 property-based tests in test.html
+  - [x]* 12.2 Write all 11 property-based tests in test.html
     - Implement PBT for Properties 1–11 using fast-check arbitraries (minimum 100 runs each)
     - Tag each test with `// Feature: todo-life-dashboard, Property N: <description>`
     - **Property 1**: `fc.integer({min:0,max:23})` → greeting in correct range
@@ -184,7 +184,7 @@ Implement a self-contained single-page web application (`index.html`) with embed
     - **Property 11**: valid usernames → storage and greeting inclusion
     - **Validates: Requirements 1.3–1.6, 3.2, 3.3, 4.2, 4.3, 4.5, 5.1, 5.2, 7.2, 7.4, 7.6, 9.3, 9.4, 10.2, 10.4, 11.2, 11.3**
 
-- [ ] 13. Final checkpoint — Ensure all tests pass
+- [x] 13. Final checkpoint — Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ---

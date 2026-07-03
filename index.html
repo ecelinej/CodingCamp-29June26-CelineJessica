@@ -4,129 +4,183 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>To-Do Life Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
-    /* ─── CSS Custom Properties: Light / Dark Themes ─── */
+    /* ── CSS Custom Properties: Light / Dark Themes ── */
     :root,
     [data-theme="light"] {
-      --color-bg:          #f5f5f5;
-      --color-surface:     #ffffff;
-      --color-surface-alt: #f0f0f0;
-      --color-border:      #dddddd;
-      --color-text:        #1a1a1a;
-      --color-text-muted:  #666666;
-      --color-primary:     #4a6cf7;
-      --color-primary-hover: #3a5ce5;
-      --color-danger:      #e53935;
-      --color-danger-hover:#c62828;
-      --color-success:     #43a047;
-      --color-disabled-bg: #cccccc;
-      --color-disabled-text: #888888;
-      --shadow-widget:     0 2px 8px rgba(0, 0, 0, 0.08);
+      --bg-gradient-a:  #e0e7ff;
+      --bg-gradient-b:  #f0fdf4;
+      --bg-gradient-c:  #fdf4ff;
+      --glass-bg:       rgba(255,255,255,0.20);
+      --glass-border:   rgba(255,255,255,0.45);
+      --glass-shadow:   0 8px 32px rgba(80,80,160,0.12);
+      --glass-blur:     16px;
+      --glow-color:     rgba(120,120,220,0.10);
+      --color-text:     #1a1a2e;
+      --color-text-muted: #5a5a7a;
+      --color-accent:   #5b5ef4;
+      --color-accent-hover: #4345d8;
+      --color-danger:   #e53935;
+      --color-danger-hover: #c62828;
+      --color-success:  #22c55e;
+      --color-input-bg: rgba(255,255,255,0.55);
+      --color-input-border: rgba(180,180,220,0.5);
+      --color-check:    #5b5ef4;
+      --color-tag-bg:   rgba(91,94,244,0.10);
     }
 
     [data-theme="dark"] {
-      --color-bg:          #1a1a2e;
-      --color-surface:     #16213e;
-      --color-surface-alt: #0f3460;
-      --color-border:      #2a2a4a;
-      --color-text:        #e0e0e0;
-      --color-text-muted:  #9090aa;
-      --color-primary:     #6c8ef7;
-      --color-primary-hover: #8aaaf9;
-      --color-danger:      #ef5350;
-      --color-danger-hover:#e53935;
-      --color-success:     #66bb6a;
-      --color-disabled-bg: #333355;
-      --color-disabled-text:#666688;
-      --shadow-widget:     0 2px 8px rgba(0, 0, 0, 0.4);
+      --bg-gradient-a:  #0f0f23;
+      --bg-gradient-b:  #141428;
+      --bg-gradient-c:  #1a0f2e;
+      --glass-bg:       rgba(255,255,255,0.06);
+      --glass-border:   rgba(255,255,255,0.10);
+      --glass-shadow:   0 8px 32px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.04);
+      --glass-blur:     20px;
+      --glow-color:     rgba(100,100,255,0.08);
+      --color-text:     #e8e8f5;
+      --color-text-muted: #8888aa;
+      --color-accent:   #7c7ff5;
+      --color-accent-hover: #9497f7;
+      --color-danger:   #f87171;
+      --color-danger-hover: #ef4444;
+      --color-success:  #4ade80;
+      --color-input-bg: rgba(255,255,255,0.07);
+      --color-input-border: rgba(255,255,255,0.12);
+      --color-check:    #7c7ff5;
+      --color-tag-bg:   rgba(124,127,245,0.15);
     }
 
-    /* ─── Reset & Base ─── */
-    *, *::before, *::after {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    /* ── Reset & Base ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-      background-color: var(--color-bg);
-      color: var(--color-text);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
       min-height: 100vh;
-      transition: background-color 0.15s ease, color 0.15s ease;
+      background: linear-gradient(135deg, var(--bg-gradient-a) 0%, var(--bg-gradient-b) 50%, var(--bg-gradient-c) 100%);
+      background-attachment: fixed;
+      color: var(--color-text);
+      transition: background 0.2s ease, color 0.15s ease;
     }
 
-    /* ─── Layout ─── */
+    /* ── Glass card mixin ── */
+    .glass {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: 18px;
+      box-shadow: var(--glass-shadow);
+      backdrop-filter: blur(var(--glass-blur));
+      -webkit-backdrop-filter: blur(var(--glass-blur));
+      transition: transform 0.15s ease, box-shadow 0.15s ease, backdrop-filter 0.15s ease;
+      animation: fadeInUp 0.35s ease-out both;
+    }
+
+    .glass:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glass-shadow), 0 0 0 1px var(--glass-border);
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Layout ── */
     .dashboard-header {
       display: flex;
       justify-content: flex-end;
       align-items: center;
-      padding: 0.75rem 1.5rem;
-      background-color: var(--color-surface);
-      border-bottom: 1px solid var(--color-border);
-      box-shadow: var(--shadow-widget);
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--glass-border);
+      background: var(--glass-bg);
     }
 
     .dashboard-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 1.25rem;
-      padding: 1.5rem;
+      gap: 24px;
+      padding: 28px 24px;
       max-width: 1200px;
       margin: 0 auto;
     }
 
-    /* ─── Widget Base ─── */
     .widget {
-      background-color: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      box-shadow: var(--shadow-widget);
+      padding: 1.5rem;
+      animation-delay: calc(var(--widget-i, 0) * 60ms);
     }
 
     .widget-title {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.1em;
       color: var(--color-text-muted);
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
     }
 
-    /* ─── Greeting Widget ─── */
+    /* ── Greeting Widget ── */
     .greeting-time {
-      font-size: 2.5rem;
+      font-size: clamp(3rem, 8vw, 4.5rem);
       font-weight: 700;
       line-height: 1;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
+      background: linear-gradient(135deg, var(--color-accent) 0%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .greeting-date {
       font-size: 0.9rem;
       color: var(--color-text-muted);
-      margin-top: 0.25rem;
+      margin-top: 0.4rem;
     }
 
     .greeting-message {
-      font-size: 1.25rem;
-      font-weight: 500;
-      margin-top: 0.75rem;
+      font-size: 1.3rem;
+      font-weight: 600;
+      margin-top: 0.9rem;
+      color: var(--color-text);
     }
 
     .greeting-name-form {
       display: flex;
       gap: 0.5rem;
-      margin-top: 0.75rem;
+      margin-top: 1rem;
     }
 
-    /* ─── Focus Timer Widget ─── */
+    /* ── Focus Timer Widget ── */
     .timer-display {
-      font-size: 3rem;
+      font-size: clamp(2.8rem, 7vw, 4rem);
       font-weight: 700;
       text-align: center;
-      letter-spacing: 0.04em;
-      margin: 0.5rem 0;
+      letter-spacing: 0.06em;
+      margin: 0.5rem 0 0.25rem;
+      color: var(--color-text);
+    }
+
+    .timer-duration-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      color: var(--color-text-muted);
+      margin-bottom: 0.75rem;
+    }
+
+    .timer-duration-row input[type="number"] {
+      width: 4.5rem;
+      text-align: center;
+      padding: 0.3rem 0.5rem;
     }
 
     .timer-controls {
@@ -140,33 +194,95 @@
       text-align: center;
       color: var(--color-success);
       font-weight: 600;
-      margin-top: 0.5rem;
+      margin-top: 0.75rem;
       min-height: 1.4em;
+      font-size: 0.95rem;
     }
 
-    /* ─── To-Do List Widget ─── */
+    /* ── Stats Widget ── */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .stat-item {
+      background: var(--color-tag-bg);
+      border-radius: 12px;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+    }
+
+    .stat-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--color-text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 0.35rem;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--color-accent);
+      line-height: 1;
+    }
+
+    /* ── To-Do List Widget ── */
     .todo-input-row {
       display: flex;
       gap: 0.5rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
     }
 
     .todo-sort-row {
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
     }
 
     .todo-list {
       list-style: none;
+      max-height: 380px;
+      overflow-y: auto;
+      padding-right: 2px;
+      scrollbar-width: thin;
+      scrollbar-color: var(--color-input-border) transparent;
+    }
+
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid var(--glass-border);
+    }
+
+    .todo-item:last-child { border-bottom: none; }
+
+    .todo-label-wrap { flex: 1; min-width: 0; }
+
+    .todo-label {
+      font-size: 0.95rem;
+      word-break: break-word;
+    }
+
+    .todo-label.done {
+      text-decoration: line-through;
+      color: var(--color-text-muted);
     }
 
     .todo-placeholder {
       color: var(--color-text-muted);
       font-style: italic;
       text-align: center;
-      padding: 1rem 0;
+      padding: 1.25rem 0;
+      font-size: 0.9rem;
     }
 
-    /* ─── Quick Links Widget ─── */
+    /* ── Quick Links Widget ── */
     .links-add-form {
       display: grid;
       gap: 0.5rem;
@@ -184,197 +300,246 @@
       font-style: italic;
       text-align: center;
       padding: 0.75rem 0;
+      font-size: 0.9rem;
     }
 
-    /* ─── Shared Form Controls ─── */
+    .link-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      background: var(--color-tag-bg);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .link-chip-btn {
+      background: none !important;
+      color: var(--color-accent) !important;
+      font-weight: 500;
+      font-size: 0.85rem;
+      padding: 0.35rem 0.6rem 0.35rem 0.75rem !important;
+      border-radius: 0 !important;
+    }
+
+    .link-chip-btn:hover { background: none !important; text-decoration: underline; }
+
+    .link-chip-del {
+      background: none !important;
+      color: var(--color-text-muted) !important;
+      padding: 0.35rem 0.55rem !important;
+      font-size: 0.85rem;
+      border-radius: 0 !important;
+      line-height: 1;
+    }
+
+    .link-chip-del:hover { color: var(--color-danger) !important; background: none !important; }
+
+    /* ── Shared Form Controls ── */
     input[type="text"],
-    input[type="url"] {
-      flex: 1;
-      padding: 0.45rem 0.65rem;
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      background-color: var(--color-surface-alt);
+    input[type="url"],
+    input[type="number"],
+    select {
+      padding: 0.45rem 0.7rem;
+      border: 1px solid var(--color-input-border);
+      border-radius: 10px;
+      background: var(--color-input-bg);
       color: var(--color-text);
       font-size: 0.9rem;
+      font-family: inherit;
       outline: none;
+      transition: border-color 0.12s ease, box-shadow 0.12s ease;
+      width: 100%;
     }
 
     input[type="text"]:focus,
-    input[type="url"]:focus {
-      border-color: var(--color-primary);
+    input[type="url"]:focus,
+    input[type="number"]:focus,
+    select:focus {
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(91,94,244,0.15);
+    }
+
+    input[type="checkbox"] {
+      width: 1.1rem;
+      height: 1.1rem;
+      accent-color: var(--color-check);
+      cursor: pointer;
+      flex-shrink: 0;
     }
 
     button {
-      padding: 0.45rem 0.85rem;
+      padding: 0.45rem 0.9rem;
       border: none;
-      border-radius: 6px;
-      background-color: var(--color-primary);
-      color: #ffffff;
+      border-radius: 10px;
+      background: var(--color-accent);
+      color: #fff;
       font-size: 0.875rem;
-      font-weight: 500;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
-      transition: background-color 0.12s ease;
+      transition: background 0.12s ease, transform 0.08s ease;
+      white-space: nowrap;
     }
 
-    button:hover {
-      background-color: var(--color-primary-hover);
-    }
-
-    button:disabled {
-      background-color: var(--color-disabled-bg);
-      color: var(--color-disabled-text);
-      cursor: not-allowed;
-    }
-
-    button.btn-danger {
-      background-color: var(--color-danger);
-    }
-
-    button.btn-danger:hover {
-      background-color: var(--color-danger-hover);
-    }
+    button:hover { background: var(--color-accent-hover); }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
     button.btn-ghost {
-      background-color: transparent;
+      background: var(--color-input-bg);
       color: var(--color-text-muted);
-      border: 1px solid var(--color-border);
+      border: 1px solid var(--color-input-border);
     }
 
     button.btn-ghost:hover {
-      background-color: var(--color-surface-alt);
+      background: var(--color-tag-bg);
       color: var(--color-text);
     }
 
-    select {
-      padding: 0.4rem 0.6rem;
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      background-color: var(--color-surface-alt);
-      color: var(--color-text);
-      font-size: 0.875rem;
-      outline: none;
+    button.btn-danger { background: var(--color-danger); }
+    button.btn-danger:hover { background: var(--color-danger-hover); }
+
+    button.btn-sm {
+      padding: 0.25rem 0.5rem;
+      font-size: 0.8rem;
+      border-radius: 7px;
     }
 
     .error-msg {
       color: var(--color-danger);
       font-size: 0.8rem;
-      margin-top: 0.25rem;
-      min-height: 1em;
+      margin-top: 0.3rem;
+      min-height: 1.1em;
     }
 
-    /* ─── Theme Toggle Button ─── */
+    /* ── Theme Toggle ── */
     .theme-toggle {
-      background: none;
-      border: 1px solid var(--color-border);
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
       border-radius: 20px;
-      padding: 0.35rem 0.75rem;
+      padding: 0.4rem 0.9rem;
       font-size: 0.875rem;
+      font-weight: 500;
       color: var(--color-text);
       cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: background 0.12s ease, box-shadow 0.12s ease;
     }
 
     .theme-toggle:hover {
-      background-color: var(--color-surface-alt);
+      box-shadow: 0 0 0 2px var(--color-accent);
+      background: var(--glass-bg);
+    }
+
+    /* ── Accessibility helpers ── */
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 480px) {
+      .dashboard-grid { padding: 16px 12px; gap: 16px; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
     }
   </style>
 </head>
 <body>
 
-  <!-- ─── Dashboard Header (Theme Toggle) ─── -->
+  <!-- ── Dashboard Header ── -->
   <header class="dashboard-header" role="banner">
-    <button id="theme-toggle" class="theme-toggle" aria-label="Toggle light/dark theme">
-      🌙 Dark Mode
-    </button>
+    <button id="theme-toggle" class="theme-toggle" aria-label="Switch to dark theme">🌙 Dark Mode</button>
   </header>
 
-  <!-- ─── Dashboard Grid ─── -->
+  <!-- ── Dashboard Grid ── -->
   <main class="dashboard-grid" role="main">
 
-    <!-- ─── Greeting Widget ─── -->
-    <section class="widget" id="widget-greeting" aria-label="Greeting and clock">
+    <!-- ── Greeting Widget ── -->
+    <section class="widget glass" id="widget-greeting" aria-label="Greeting and clock" style="--widget-i:0">
       <p class="widget-title">Welcome</p>
       <p class="greeting-time" id="greeting-time" aria-live="polite">--:--</p>
       <p class="greeting-date" id="greeting-date"></p>
       <p class="greeting-message" id="greeting-message" aria-live="polite">Hello!</p>
       <form class="greeting-name-form" id="greeting-name-form" aria-label="Set your name">
         <label for="greeting-name-input" class="sr-only">Your name</label>
-        <input
-          type="text"
-          id="greeting-name-input"
-          placeholder="Enter your name…"
-          maxlength="50"
-          autocomplete="off"
-        />
-        <button type="submit" id="greeting-name-btn">Save</button>
+        <input type="text" id="greeting-name-input" placeholder="Enter your name…" maxlength="50" autocomplete="off" />
+        <button type="submit" id="greeting-name-btn" aria-label="Save name">Save</button>
       </form>
       <p class="error-msg" id="greeting-name-error" aria-live="polite"></p>
     </section>
 
-    <!-- ─── Focus Timer Widget ─── -->
-    <section class="widget" id="widget-timer" aria-label="Focus timer">
+    <!-- ── Focus Timer Widget ── -->
+    <section class="widget glass" id="widget-timer" aria-label="Focus timer" style="--widget-i:1">
       <p class="widget-title">Focus Timer</p>
       <p class="timer-display" id="timer-display" aria-live="polite" aria-atomic="true">25:00</p>
+      <div class="timer-duration-row">
+        <label for="timer-duration">Duration (min):</label>
+        <input type="number" id="timer-duration" min="5" max="60" value="25" aria-label="Set focus timer duration in minutes" />
+      </div>
       <div class="timer-controls">
-        <button id="timer-start" aria-label="Start timer">Start</button>
-        <button id="timer-stop" class="btn-ghost" aria-label="Stop timer">Stop</button>
-        <button id="timer-reset" class="btn-ghost" aria-label="Reset timer">Reset</button>
+        <button id="timer-start" aria-label="Start timer">▶ Start</button>
+        <button id="timer-stop" class="btn-ghost" aria-label="Stop timer">⏸ Stop</button>
+        <button id="timer-reset" class="btn-ghost" aria-label="Reset timer">↺ Reset</button>
       </div>
       <p class="timer-completion" id="timer-completion" aria-live="polite"></p>
     </section>
 
-    <!-- ─── To-Do List Widget ─── -->
-    <section class="widget" id="widget-todo" aria-label="To-do list">
+    <!-- ── Productivity Stats Widget ── -->
+    <section class="widget glass" id="widget-stats" aria-label="Productivity statistics" style="--widget-i:2">
+      <p class="widget-title">Stats</p>
+      <div class="stats-grid">
+        <div class="stat-item">
+          <span class="stat-label">All-time</span>
+          <span class="stat-value" id="stats-total" aria-live="polite">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Today</span>
+          <span class="stat-value" id="stats-today" aria-live="polite">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Streak 🔥</span>
+          <span class="stat-value" id="stats-streak" aria-live="polite">0</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── To-Do List Widget ── -->
+    <section class="widget glass" id="widget-todo" aria-label="To-do list" style="--widget-i:3">
       <p class="widget-title">To-Do List</p>
       <form class="todo-input-row" id="todo-add-form" aria-label="Add a task">
         <label for="todo-input" class="sr-only">New task</label>
-        <input
-          type="text"
-          id="todo-input"
-          placeholder="Add a task…"
-          maxlength="255"
-          autocomplete="off"
-        />
-        <button type="submit" id="todo-add-btn">Add</button>
+        <input type="text" id="todo-input" placeholder="Add a task…" maxlength="255" autocomplete="off" />
+        <button type="submit" id="todo-add-btn" aria-label="Add task">Add</button>
       </form>
       <p class="error-msg" id="todo-error" aria-live="polite"></p>
       <div class="todo-sort-row">
         <label for="todo-sort" class="sr-only">Sort order</label>
         <select id="todo-sort" aria-label="Sort tasks">
-          <option value="default">Default</option>
-          <option value="completed-last">Completed Last</option>
+          <option value="default">Default order</option>
+          <option value="completed-last">Completed last</option>
         </select>
       </div>
-      <ul class="todo-list" id="todo-list" aria-label="Task list" aria-live="polite">
-        <!-- Tasks rendered here by App.TodoList -->
-      </ul>
+      <ul class="todo-list" id="todo-list" aria-label="Task list" aria-live="polite"></ul>
       <p class="todo-placeholder" id="todo-placeholder">No tasks yet — add one above!</p>
     </section>
 
-    <!-- ─── Quick Links Widget ─── -->
-    <section class="widget" id="widget-links" aria-label="Quick links">
+    <!-- ── Quick Links Widget ── -->
+    <section class="widget glass" id="widget-links" aria-label="Quick links" style="--widget-i:4">
       <p class="widget-title">Quick Links</p>
       <form class="links-add-form" id="links-add-form" aria-label="Add a quick link">
         <label for="links-label-input" class="sr-only">Link label</label>
-        <input
-          type="text"
-          id="links-label-input"
-          placeholder="Label (max 50 chars)"
-          maxlength="50"
-          autocomplete="off"
-        />
+        <input type="text" id="links-label-input" placeholder="Label (max 50 chars)" maxlength="50" autocomplete="off" />
         <label for="links-url-input" class="sr-only">URL</label>
-        <input
-          type="url"
-          id="links-url-input"
-          placeholder="https://example.com"
-          autocomplete="off"
-        />
-        <button type="submit" id="links-add-btn">Add Link</button>
+        <input type="url" id="links-url-input" placeholder="https://example.com" autocomplete="off" />
+        <button type="submit" id="links-add-btn" aria-label="Add quick link">Add Link</button>
       </form>
       <p class="error-msg" id="links-error" aria-live="polite"></p>
-      <div class="links-grid" id="links-grid" aria-label="Quick links list" aria-live="polite">
-        <!-- Links rendered here by App.QuickLinks -->
-      </div>
+      <div class="links-grid" id="links-grid" aria-label="Quick links list" aria-live="polite"></div>
       <p class="links-placeholder" id="links-placeholder">No links yet — add one above!</p>
     </section>
 
@@ -383,239 +548,112 @@
   <script>
     'use strict';
 
-    // ─── Shared Application Namespace ───────────────────────────────────────────
     window.App = {};
 
-    // ─── App.Storage ─────────────────────────────────────────────────────────────
+    // ── App.Storage ───────────────────────────────────────────────────────────
     App.Storage = (function () {
-      // Storage key constants
       const KEYS = {
-        TASKS:    'tld_tasks',
-        LINKS:    'tld_links',
-        THEME:    'tld_theme',
-        USERNAME: 'tld_username',
+        TASKS:          'tld_tasks',
+        LINKS:          'tld_links',
+        THEME:          'tld_theme',
+        USERNAME:       'tld_username',
+        STATS:          'tld_stats',
+        TIMER_DURATION: 'tld_timer_duration',
       };
-
-      /**
-       * Retrieve and deserialize a value from localStorage.
-       * Returns null if the key is missing or the stored value is malformed JSON.
-       * @param {string} key
-       * @returns {any|null}
-       */
       function get(key) {
-        const raw = localStorage.getItem(key);
-        if (raw === null) return null;
-        try {
-          return JSON.parse(raw);
-        } catch (e) {
-          if (e instanceof SyntaxError) return null;
-          throw e;
-        }
+        try { const r = localStorage.getItem(key); return r === null ? null : JSON.parse(r); }
+        catch (e) { return null; }
       }
-
-      /**
-       * Serialize and store a value in localStorage.
-       * Returns true on success, false if storage is unavailable or full.
-       * @param {string} key
-       * @param {any} value
-       * @returns {boolean}
-       */
       function set(key, value) {
-        try {
-          localStorage.setItem(key, JSON.stringify(value));
-          return true;
-        } catch (e) {
-          if (e instanceof DOMException &&
-              (e.name === 'QuotaExceededError' ||
-               e.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-               e.name === 'SecurityError')) {
-            return false;
-          }
-          return false;
-        }
+        try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+        catch (e) { return false; }
       }
-
-      /**
-       * Remove a key from localStorage.
-       * @param {string} key
-       */
-      function remove(key) {
-        localStorage.removeItem(key);
-      }
-
+      function remove(key) { try { localStorage.removeItem(key); } catch (e) {} }
       return { get, set, remove, KEYS };
     })();
 
-    // ─── App.ThemeManager ────────────────────────────────────────────────────────
+    // ── App.ThemeManager ──────────────────────────────────────────────────────
     App.ThemeManager = (function () {
-      var _currentTheme = 'light';
-
-      function setTheme(theme) {
-        _currentTheme = theme;
-
-        // Toggle data-theme attribute on <html> — synchronous DOM write (< 200 ms)
-        document.documentElement.setAttribute('data-theme', theme);
-
-        // Persist to localStorage (failures are silently ignored per Req 9.6)
-        App.Storage.set('tld_theme', theme);
-
-        // Update toggle button label to show the opposite action
-        var btn = document.getElementById('theme-toggle');
+      let _theme = 'light';
+      function setTheme(t) {
+        _theme = t;
+        document.documentElement.setAttribute('data-theme', t);
+        App.Storage.set(App.Storage.KEYS.THEME, t);
+        const btn = document.getElementById('theme-toggle');
         if (btn) {
-          if (theme === 'dark') {
-            btn.textContent = '☀ Light Mode';
-            btn.setAttribute('aria-label', 'Switch to light theme');
-          } else {
-            btn.textContent = '🌙 Dark Mode';
-            btn.setAttribute('aria-label', 'Switch to dark theme');
-          }
+          btn.textContent = t === 'dark' ? '☀ Light Mode' : '🌙 Dark Mode';
+          btn.setAttribute('aria-label', t === 'dark' ? 'Switch to light theme' : 'Switch to dark theme');
         }
       }
-
       function init() {
-        // Read saved theme before any content renders; fall back to "light"
-        var saved = App.Storage.get('tld_theme');
-        var theme = (saved === 'light' || saved === 'dark') ? saved : 'light';
-        setTheme(theme);
-
-        // Wire click event on the toggle button
-        var btn = document.getElementById('theme-toggle');
-        if (btn) {
-          btn.addEventListener('click', function () {
-            setTheme(_currentTheme === 'light' ? 'dark' : 'light');
-          });
-        }
+        const saved = App.Storage.get(App.Storage.KEYS.THEME);
+        setTheme(saved === 'dark' ? 'dark' : 'light');
+        const btn = document.getElementById('theme-toggle');
+        if (btn) btn.addEventListener('click', () => setTheme(_theme === 'light' ? 'dark' : 'light'));
       }
-
       return { init, setTheme };
     })();
 
-    // ─── App.GreetingWidget ──────────────────────────────────────────────────────
+    // ── App.GreetingWidget ────────────────────────────────────────────────────
     App.GreetingWidget = (function () {
-      // ── Internal state ──────────────────────────────────────────────────────
-      var state = {
-        userName: null,   // task 4.3 will wire up the name input
-      };
+      let _userName = null;
+      let _lastMin  = -1;
 
-      // ── DOM refs (resolved once in init) ────────────────────────────────────
-      var elTime;
-      var elDate;
-      var elMessage;
-
-      // ── Pure function: map hour (0–23) to greeting string ───────────────────
-      function getGreeting(hour) {
-        if (hour >= 5  && hour <= 11) return 'Good Morning';
-        if (hour >= 12 && hour <= 17) return 'Good Afternoon';
-        if (hour >= 18 && hour <= 20) return 'Good Evening';
-        // hours 21–23 and 0–4 → Good Night
+      function getGreeting(h) {
+        if (h >= 5  && h <= 11) return 'Good Morning';
+        if (h >= 12 && h <= 17) return 'Good Afternoon';
+        if (h >= 18 && h <= 20) return 'Good Evening';
         return 'Good Night';
       }
 
-      // ── Format a Date as HH:MM ───────────────────────────────────────────────
-      function formatTime(date) {
-        var h = String(date.getHours()).padStart(2, '0');
-        var m = String(date.getMinutes()).padStart(2, '0');
-        return h + ':' + m;
+      function buildMsg(h) {
+        const base = getGreeting(h);
+        return _userName ? base + ', ' + _userName + '!' : base + '!';
       }
 
-      // ── Format a Date as "Weekday, Month DD, YYYY" ───────────────────────────
-      function formatDate(date) {
-        return date.toLocaleDateString(undefined, {
-          weekday: 'long',
-          year:    'numeric',
-          month:   'long',
-          day:     'numeric',
-        });
-      }
-
-      // ── Build the greeting message (with optional name) ──────────────────────
-      function buildMessage(hour) {
-        var base = getGreeting(hour);
-        if (state.userName) {
-          return base + ', ' + state.userName + '!';
-        }
-        return base + '!';
-      }
-
-      // ── Tracks last-rendered minute to detect changes ────────────────────────
-      var _lastMinute = -1;
-
-      // ── Clock tick: called every second by setInterval ───────────────────────
       function tick() {
-        var now    = new Date();
-        var hour   = now.getHours();
-        var minute = now.getMinutes();
-
-        // Always update the HH:MM display (Requirement 1.1)
-        elTime.textContent = formatTime(now);
-
-        // Update date display on first tick and whenever the minute changes
-        // (handles midnight rollover — Requirement 1.8)
-        if (minute !== _lastMinute) {
-          _lastMinute = minute;
-          elDate.textContent    = formatDate(now);      // Requirement 1.2
-          elMessage.textContent = buildMessage(hour);   // Requirements 1.3–1.6
+        const now = new Date();
+        const h = now.getHours(), m = now.getMinutes();
+        const elT = document.getElementById('greeting-time');
+        if (elT) elT.textContent =
+          String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+        if (m !== _lastMin) {
+          _lastMin = m;
+          const elD = document.getElementById('greeting-date');
+          const elM = document.getElementById('greeting-message');
+          if (elD) elD.textContent = now.toLocaleDateString(undefined,
+            { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+          if (elM) elM.textContent = buildMsg(h);
         }
       }
 
-      // ── Render the greeting message using current state ──────────────────────
       function renderGreeting() {
-        var now  = new Date();
-        var hour = now.getHours();
-        elMessage.textContent = buildMessage(hour);
+        const elM = document.getElementById('greeting-message');
+        if (elM) elM.textContent = buildMsg(new Date().getHours());
       }
 
-      // ── Public init ─────────────────────────────────────────────────────────
       function init() {
-        elTime    = document.getElementById('greeting-time');
-        elDate    = document.getElementById('greeting-date');
-        elMessage = document.getElementById('greeting-message');
-
-        // Requirement 10.3: read saved username from storage on load
-        var saved = App.Storage.get('tld_username');
-        // Storage.get returns null on missing key or parse error; treat as no name
-        if (saved && typeof saved === 'string' && saved.trim().length > 0) {
-          state.userName = saved.trim();
-        }
-
-        // Run immediately so the display is populated before the first second
-        // (tick only updates greeting on minute change, so force it now)
+        const saved = App.Storage.get(App.Storage.KEYS.USERNAME);
+        if (saved && typeof saved === 'string' && saved.trim()) _userName = saved.trim();
+        _lastMin = -1;
         tick();
-
-        // Requirement 1.1: update every second
         setInterval(tick, 1000);
 
-        // ── Wire the name input form (Requirements 10.1, 10.2, 10.4, 10.5, 10.6) ──
-        var nameForm  = document.getElementById('greeting-name-form');
-        var nameInput = document.getElementById('greeting-name-input');
-
-        if (nameForm && nameInput) {
-          // Pre-fill the input with any saved name so the user can see / edit it
-          if (state.userName) {
-            nameInput.value = state.userName;
-          }
-
+        const nameInput = document.getElementById('greeting-name-input');
+        const nameForm  = document.getElementById('greeting-name-form');
+        if (nameInput && _userName) nameInput.value = _userName;
+        if (nameForm) {
           nameForm.addEventListener('submit', function (e) {
             e.preventDefault();
-
-            var trimmed = nameInput.value.trim();
-
-            if (trimmed.length > 0) {
-              // Non-empty: save name, update state, update greeting
-              // Enforce 50-char max (HTML maxlength already does this, but be defensive)
-              if (trimmed.length > 50) {
-                trimmed = trimmed.slice(0, 50);
-              }
-              state.userName = trimmed;
-              App.Storage.set('tld_username', trimmed);   // Requirement 10.4
+            const v = nameInput ? nameInput.value.trim() : '';
+            if (v.length > 0) {
+              _userName = v.slice(0, 50);
+              App.Storage.set(App.Storage.KEYS.USERNAME, _userName);
             } else {
-              // Empty / whitespace-only: clear name from state and storage
-              state.userName = null;
-              App.Storage.remove('tld_username');          // Requirement 10.6
-              nameInput.value = '';
+              _userName = null;
+              App.Storage.remove(App.Storage.KEYS.USERNAME);
+              if (nameInput) nameInput.value = '';
             }
-
-            // Re-render greeting immediately to reflect the change
             renderGreeting();
           });
         }
@@ -624,699 +662,423 @@
       return { init, getGreeting };
     })();
 
-    // ─── App.FocusTimer ──────────────────────────────────────────────────────────
+    // ── App.FocusTimer ────────────────────────────────────────────────────────
     App.FocusTimer = (function () {
-      // ── Internal state ──────────────────────────────────────────────────────
-      var state = {
-        remaining:  1500,   // seconds (25 × 60)
-        running:    false,
-        intervalId: null
-      };
+      const state = { durationMinutes: 25, remaining: 1500, running: false, intervalId: null };
 
-      // ── Helpers ─────────────────────────────────────────────────────────────
-
-      /**
-       * Format a number of seconds as "MM:SS".
-       * @param {number} totalSeconds
-       * @returns {string}
-       */
-      function formatTime(totalSeconds) {
-        var m = Math.floor(totalSeconds / 60);
-        var s = totalSeconds % 60;
-        return (m < 10 ? '0' + m : String(m)) + ':' + (s < 10 ? '0' + s : String(s));
+      function fmt(s) {
+        return String(Math.floor(s / 60)).padStart(2,'0') + ':' + String(s % 60).padStart(2,'0');
       }
 
-      // ── Render ───────────────────────────────────────────────────────────────
-
-      /**
-       * Update the display element to show the current remaining time (MM:SS).
-       * Also clears the completion message whenever the timer is not complete.
-       */
       function render() {
-        var display    = document.getElementById('timer-display');
-        var completion = document.getElementById('timer-completion');
-        if (display)    display.textContent    = formatTime(state.remaining);
-        if (completion) completion.textContent = '';
+        const d = document.getElementById('timer-display');
+        const c = document.getElementById('timer-completion');
+        if (d) d.textContent = fmt(state.remaining);
+        if (c && state.running) c.textContent = '';
       }
 
-      // ── State machine ────────────────────────────────────────────────────────
-
-      /**
-       * Called every second while the timer is running.
-       * Decrements remaining, re-renders, and triggers complete() at zero.
-       */
       function tick() {
-        state.remaining -= 1;
+        state.remaining--;
         render();
-        if (state.remaining <= 0) {
-          complete();
-        }
+        if (state.remaining <= 0) complete();
       }
 
-      /**
-       * Start the countdown.
-       * Guard: no-op if already running (Req 2.8).
-       */
       function start() {
-        if (state.running) return;           // idempotent guard
-        state.running    = true;
+        if (state.running) return;
+        state.running = true;
         state.intervalId = setInterval(tick, 1000);
-        render();
+        const c = document.getElementById('timer-completion');
+        if (c) c.textContent = '';
       }
 
-      /**
-       * Pause the countdown.
-       * Guard: no-op if not currently running (Req 2.9).
-       */
       function stop() {
-        if (!state.running) return;          // idempotent guard
+        if (!state.running) return;
         clearInterval(state.intervalId);
         state.intervalId = null;
-        state.running    = false;
-        render();
+        state.running = false;
       }
 
-      /**
-       * Reset to initial state unconditionally (Req 2.5).
-       * Clears any active interval before restoring defaults.
-       */
       function reset() {
-        clearInterval(state.intervalId);     // safe even if intervalId is null
-        state.remaining  = 1500;
-        state.running    = false;
+        clearInterval(state.intervalId);
         state.intervalId = null;
+        state.running = false;
+        state.remaining = state.durationMinutes * 60;
         render();
+        const c = document.getElementById('timer-completion');
+        if (c) c.textContent = '';
       }
 
-      /**
-       * Called automatically when remaining reaches 0 (Req 2.6).
-       * Stops the timer and shows the completion message.
-       */
       function complete() {
         clearInterval(state.intervalId);
         state.intervalId = null;
-        state.running    = false;
-
-        var display    = document.getElementById('timer-display');
-        var completion = document.getElementById('timer-completion');
-        if (display)    display.textContent    = '00:00';
-        if (completion) completion.textContent = '🎉 Focus session complete!';
+        state.running = false;
+        const d = document.getElementById('timer-display');
+        const c = document.getElementById('timer-completion');
+        if (d) d.textContent = '00:00';
+        if (c) c.textContent = '🎉 Focus session complete!';
       }
 
-      // ── Init: wire up DOM events ─────────────────────────────────────────────
+      function applyDuration(val) {
+        const n = Math.max(5, Math.min(60, parseInt(val, 10) || 25));
+        state.durationMinutes = n;
+        App.Storage.set(App.Storage.KEYS.TIMER_DURATION, n);
+        const inp = document.getElementById('timer-duration');
+        if (inp) inp.value = n;
+        if (state.running) stop();
+        reset();
+      }
 
       function init() {
-        render();   // show initial "25:00"
+        const saved = App.Storage.get(App.Storage.KEYS.TIMER_DURATION);
+        if (typeof saved === 'number' && saved >= 5 && saved <= 60) {
+          state.durationMinutes = saved;
+        }
+        state.remaining = state.durationMinutes * 60;
+        const inp = document.getElementById('timer-duration');
+        if (inp) inp.value = state.durationMinutes;
+        render();
 
-        var btnStart = document.getElementById('timer-start');
-        var btnStop  = document.getElementById('timer-stop');
-        var btnReset = document.getElementById('timer-reset');
+        document.getElementById('timer-start') .addEventListener('click', start);
+        document.getElementById('timer-stop')  .addEventListener('click', stop);
+        document.getElementById('timer-reset') .addEventListener('click', reset);
 
-        if (btnStart) btnStart.addEventListener('click', start);
-        if (btnStop)  btnStop.addEventListener('click',  stop);
-        if (btnReset) btnReset.addEventListener('click', reset);
+        if (inp) {
+          inp.addEventListener('blur', () => applyDuration(inp.value));
+          inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); applyDuration(inp.value); } });
+        }
       }
 
       return { init };
     })();
 
-    // ─── App.TodoList ────────────────────────────────────────────────────────────
+    // ── App.Stats ─────────────────────────────────────────────────────────────
+    App.Stats = (function () {
+      let state = { total: 0, today: 0, streak: 0, lastDate: null };
+
+      function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+      function yesterdayStr() {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        return d.toISOString().slice(0, 10);
+      }
+
+      function computeStreak(s, today) {
+        if (s.lastDate === today)          return { streak: s.streak, lastDate: s.lastDate };
+        if (s.lastDate === yesterdayStr()) return { streak: s.streak + 1, lastDate: today };
+        return { streak: 1, lastDate: today };
+      }
+
+      function renderStats() {
+        const t = document.getElementById('stats-total');
+        const d = document.getElementById('stats-today');
+        const s = document.getElementById('stats-streak');
+        if (t) t.textContent = state.total;
+        if (d) d.textContent = state.today;
+        if (s) s.textContent = state.streak;
+      }
+
+      function onTaskChanged() {
+        const tasks = Array.isArray(App.TodoList && App.TodoList._tasks) ? App.TodoList._tasks : [];
+        const today = todayStr();
+        const newTotal = tasks.filter(t => t.completed).length;
+        const newToday = tasks.filter(t => t.completed && t.completedDate === today).length;
+        const prevToday = state.today;
+        state.total = newTotal;
+        state.today = newToday;
+        // Increment streak on first completion of the day
+        if (newToday > 0 && prevToday === 0) {
+          const r = computeStreak(state, today);
+          state.streak = r.streak;
+          state.lastDate = r.lastDate;
+        }
+        App.Storage.set(App.Storage.KEYS.STATS, state);
+        renderStats();
+      }
+
+      function init() {
+        const saved = App.Storage.get(App.Storage.KEYS.STATS);
+        if (saved && typeof saved === 'object') {
+          state.total    = Number(saved.total)  || 0;
+          state.today    = Number(saved.today)  || 0;
+          state.streak   = Number(saved.streak) || 0;
+          state.lastDate = saved.lastDate || null;
+        }
+        // Stale streak check
+        const today = todayStr();
+        if (state.lastDate && state.lastDate !== today && state.lastDate !== yesterdayStr()) {
+          state.streak = 0;
+        }
+        renderStats();
+      }
+
+      return { init, onTaskChanged };
+    })();
+
+    // ── App.TodoList ──────────────────────────────────────────────────────────
     App.TodoList = (function () {
-      // ── Internal state ──────────────────────────────────────────────────────
-      const state = {
-        tasks: [],
-        sortOrder: 'default',
-        editingId: null
-      };
+      const state = { tasks: [], sortOrder: 'default', editingId: null };
 
-      /**
-       * Validate a raw task label string.
-       * Trims whitespace, rejects empty/whitespace-only strings and labels
-       * longer than 255 characters after trimming.
-       * @param {string} raw
-       * @returns {{ valid: false, error: string } | { valid: true, trimmed: string }}
-       */
       function validateLabel(raw) {
-        const trimmed = (raw || '').trim();
-        if (trimmed.length === 0) {
-          return { valid: false, error: 'Task label cannot be empty.' };
-        }
-        if (trimmed.length > 255) {
-          return { valid: false, error: 'Task label must be 255 characters or fewer.' };
-        }
-        return { valid: true, trimmed };
+        const t = (raw || '').trim();
+        if (!t) return { valid: false, error: 'Task label cannot be empty.' };
+        if (t.length > 255) return { valid: false, error: 'Label must be 255 chars or fewer.' };
+        return { valid: true, trimmed: t };
       }
 
-      /**
-       * Create a new Task object with a unique id, the given label, completion
-       * state of false, and a creation timestamp.
-       * Uses crypto.randomUUID() when available, falling back to Date.now().toString().
-       * @param {string} label  — already-trimmed label
-       * @returns {{ id: string, label: string, completed: boolean, createdAt: number }}
-       */
-      function createTask(label) {
-        const id = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      function uid() {
+        return (typeof crypto !== 'undefined' && crypto.randomUUID)
           ? crypto.randomUUID()
-          : Date.now().toString();
-        return {
-          id,
-          label,
-          completed: false,
-          createdAt: Date.now()
-        };
+          : Date.now().toString(36) + Math.random().toString(36).slice(2);
       }
 
-      /**
-       * Add a new task from a raw label string.
-       * Shows inline error on validation failure; persists and re-renders on success.
-       * @param {string} label
-       */
-      function addTask(label) {
-        const elError = document.getElementById('todo-error');
-        const result = validateLabel(label);
-        if (!result.valid) {
-          if (elError) elError.textContent = result.error;
-          return;
-        }
-        // Clear any previous error
-        if (elError) elError.textContent = '';
-        const task = createTask(result.trimmed);
-        state.tasks.push(task);
-        const saved = App.Storage.set('tld_tasks', state.tasks);
-        if (saved === false) {
-          if (elError) elError.textContent = '⚠ Could not save — storage may be full.';
-        }
-        render();
-      }
+      function todayStr() { return new Date().toISOString().slice(0, 10); }
 
-      /**
-       * Edit the label of an existing task.
-       * On validation failure: silently retains the original label and exits edit mode.
-       * On success: updates label, persists, and re-renders.
-       * @param {string} id
-       * @param {string} newLabel
-       */
-      function editTask(id, newLabel) {
-        const result = validateLabel(newLabel);
-        // Exit edit mode regardless of outcome
-        state.editingId = null;
-        if (!result.valid) {
-          // Silently retain original label — just re-render to exit edit mode
-          render();
-          return;
-        }
-        const task = state.tasks.find(function (t) { return t.id === id; });
-        if (task) {
-          task.label = result.trimmed;
-          App.Storage.set('tld_tasks', state.tasks);
-        }
-        render();
-      }
-
-      /**
-       * Toggle the completed state of the task with the given id.
-       * Persists and re-renders.
-       * @param {string} id
-       */
-      function toggleComplete(id) {
-        const task = state.tasks.find(function (t) { return t.id === id; });
-        if (task) {
-          task.completed = !task.completed;
-          App.Storage.set('tld_tasks', state.tasks);
-        }
-        render();
-      }
-
-      /**
-       * Remove the task with the given id from the list.
-       * Persists and re-renders.
-       * @param {string} id
-       */
-      function deleteTask(id) {
-        state.tasks = state.tasks.filter(function (t) { return t.id !== id; });
-        App.Storage.set('tld_tasks', state.tasks);
-        render();
-      }
-
-      /**
-       * Return a copy of the task array, sorted according to state.sortOrder.
-       * "default"        → tasks sorted by createdAt ascending (insertion order)
-       * "completed-last" → incomplete tasks (sorted by createdAt) followed by
-       *                    completed tasks (sorted by createdAt); stable within
-       *                    each group (Req 11.2, 11.3).
-       * @returns {Task[]}
-       */
       function getSortedTasks() {
         if (state.sortOrder === 'completed-last') {
-          const incomplete = state.tasks
-            .filter(function (t) { return !t.completed; })
-            .slice()
-            .sort(function (a, b) { return a.createdAt - b.createdAt; });
-          const completed = state.tasks
-            .filter(function (t) { return t.completed; })
-            .slice()
-            .sort(function (a, b) { return a.createdAt - b.createdAt; });
-          return incomplete.concat(completed);
+          const inc = state.tasks.filter(t => !t.completed).sort((a,b) => a.createdAt - b.createdAt);
+          const com = state.tasks.filter(t =>  t.completed).sort((a,b) => a.createdAt - b.createdAt);
+          return inc.concat(com);
         }
-        // "default": insertion order preserved by sorting on createdAt ascending
-        return state.tasks.slice().sort(function (a, b) { return a.createdAt - b.createdAt; });
+        return state.tasks.slice().sort((a,b) => a.createdAt - b.createdAt);
       }
 
-      /**
-       * Render the task list DOM from the current state.
-       * - Shows/hides the placeholder based on whether tasks exist.
-       * - Builds <li> elements from getSortedTasks(), each containing:
-       *     • A checkbox reflecting the completed state
-       *     • A label <span> (with strikethrough when completed) OR an edit <input>
-       *       when state.editingId matches the task's id
-       *     • An edit button
-       *     • A delete button
-       * - All events are delegated to the #todo-list container.
-       */
-      function render() {
-        const elList        = document.getElementById('todo-list');
-        const elPlaceholder = document.getElementById('todo-placeholder');
+      function persist() { App.Storage.set(App.Storage.KEYS.TASKS, state.tasks); }
 
+      function render() {
+        const elList = document.getElementById('todo-list');
+        const elPH   = document.getElementById('todo-placeholder');
         if (!elList) return;
 
         const sorted = getSortedTasks();
+        if (elPH) elPH.style.display = sorted.length ? 'none' : '';
 
-        // Show/hide placeholder (Req 3.5)
-        if (elPlaceholder) {
-          elPlaceholder.style.display = sorted.length === 0 ? '' : 'none';
-        }
-
-        // Build the list HTML
-        const html = sorted.map(function (task) {
-          const escapedId    = task.id.replace(/"/g, '&quot;');
-          const escapedLabel = task.label
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;');
-
-          // Decide whether to render the edit input or the label span
-          let contentHtml;
-          if (state.editingId === task.id) {
-            // Edit mode: render a pre-filled text input (Req 4.1)
-            contentHtml =
-              '<input ' +
-                'class="todo-edit-input" ' +
-                'type="text" ' +
-                'data-edit-id="' + escapedId + '" ' +
-                'value="' + escapedLabel + '" ' +
-                'maxlength="255" ' +
-                'aria-label="Edit task: ' + escapedLabel + '" ' +
-              '/>';
-          } else {
-            // Normal mode: render a label span with strikethrough when completed (Req 4.6)
-            const strikeStyle = task.completed
-              ? ' style="text-decoration:line-through; color:var(--color-text-muted)"'
-              : '';
-            contentHtml =
-              '<span class="todo-label"' + strikeStyle + '>' +
-                escapedLabel +
-              '</span>';
-          }
-
-          return (
-            '<li data-id="' + escapedId + '" style="display:flex;align-items:center;gap:0.5rem;padding:0.35rem 0;border-bottom:1px solid var(--color-border)">' +
-              // Checkbox — reflects completed state (Req 3.4, 4.5)
-              '<input ' +
-                'type="checkbox" ' +
-                'class="todo-checkbox" ' +
-                'data-id="' + escapedId + '" ' +
-                (task.completed ? 'checked ' : '') +
-                'aria-label="Mark task complete: ' + escapedLabel + '" ' +
-              '/>' +
-              // Label or edit input
-              '<span style="flex:1;min-width:0">' + contentHtml + '</span>' +
-              // Edit button (Req 4.1)
-              '<button ' +
-                'class="btn-ghost todo-edit-btn" ' +
-                'data-id="' + escapedId + '" ' +
-                'aria-label="Edit task: ' + escapedLabel + '" ' +
-                'style="padding:0.25rem 0.5rem;font-size:0.8rem" ' +
-              '>✏</button>' +
-              // Delete button (Req 4.7)
-              '<button ' +
-                'class="btn-danger todo-delete-btn" ' +
-                'data-id="' + escapedId + '" ' +
-                'aria-label="Delete task: ' + escapedLabel + '" ' +
-                'style="padding:0.25rem 0.5rem;font-size:0.8rem" ' +
-              '>🗑</button>' +
-            '</li>'
-          );
+        elList.innerHTML = sorted.map(task => {
+          const eid = task.id.replace(/"/g,'&quot;');
+          const elb = task.label.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+          const content = state.editingId === task.id
+            ? `<input class="todo-edit-input" type="text" data-edit-id="${eid}" value="${elb}" maxlength="255" aria-label="Edit task" style="flex:1;padding:0.3rem 0.5rem;border-radius:8px;border:1px solid var(--color-accent);background:var(--color-input-bg);color:var(--color-text);font-family:inherit;font-size:0.9rem;outline:none;" />`
+            : `<span class="todo-label${task.completed ? ' done' : ''}">${elb}</span>`;
+          return `<li class="todo-item" data-id="${eid}">
+            <input type="checkbox" class="todo-checkbox" data-id="${eid}" ${task.completed ? 'checked' : ''} aria-label="Toggle: ${elb}" />
+            <span class="todo-label-wrap">${content}</span>
+            <button class="btn-ghost btn-sm todo-edit-btn" data-id="${eid}" aria-label="Edit: ${elb}" style="padding:0.25rem 0.5rem">✏</button>
+            <button class="btn-danger btn-sm todo-delete-btn" data-id="${eid}" aria-label="Delete: ${elb}" style="padding:0.25rem 0.5rem">🗑</button>
+          </li>`;
         }).join('');
 
-        elList.innerHTML = html;
-
-        // If we just rendered an edit input, focus it immediately
         if (state.editingId) {
-          const editInput = elList.querySelector('.todo-edit-input');
-          if (editInput) {
-            editInput.focus();
-            // Move cursor to end of the pre-filled value
-            const len = editInput.value.length;
-            editInput.setSelectionRange(len, len);
-          }
+          const inp = elList.querySelector('.todo-edit-input');
+          if (inp) { inp.focus(); const l = inp.value.length; inp.setSelectionRange(l, l); }
         }
 
-        // Register delegated event listeners only once on the list container.
-        // We use a flag on the element to avoid re-attaching on every render.
-        if (!elList._todoListenerAttached) {
-          elList._todoListenerAttached = true;
+        if (!elList._evBound) {
+          elList._evBound = true;
 
-          // ── Click delegation: checkbox, edit button, delete button ────────────
-          elList.addEventListener('click', function (e) {
-            // Checkbox toggle (Req 4.5)
+          elList.addEventListener('click', e => {
             if (e.target.classList.contains('todo-checkbox')) {
-              const id = e.target.getAttribute('data-id');
-              if (id) toggleComplete(id);
-              return;
+              toggleComplete(e.target.getAttribute('data-id')); return;
             }
-
-            // Edit button — enter edit mode (Req 4.1)
-            if (e.target.classList.contains('todo-edit-btn') ||
-                e.target.closest('.todo-edit-btn')) {
-              const btn = e.target.closest('.todo-edit-btn') || e.target;
-              const id = btn.getAttribute('data-id');
-              if (id) {
-                state.editingId = id;
-                render();
-              }
-              return;
-            }
-
-            // Delete button (Req 4.7)
-            if (e.target.classList.contains('todo-delete-btn') ||
-                e.target.closest('.todo-delete-btn')) {
-              const btn = e.target.closest('.todo-delete-btn') || e.target;
-              const id = btn.getAttribute('data-id');
-              if (id) deleteTask(id);
-              return;
-            }
+            const editBtn = e.target.closest('.todo-edit-btn');
+            if (editBtn) { state.editingId = editBtn.getAttribute('data-id'); render(); return; }
+            const delBtn = e.target.closest('.todo-delete-btn');
+            if (delBtn) { deleteTask(delBtn.getAttribute('data-id')); return; }
           });
 
-          // ── Keyboard delegation: keydown on edit input ────────────────────────
-          elList.addEventListener('keydown', function (e) {
+          elList.addEventListener('keydown', e => {
             if (!e.target.classList.contains('todo-edit-input')) return;
-
             const id = e.target.getAttribute('data-edit-id');
-
-            if (e.key === 'Enter') {
-              // Confirm edit (Req 4.2)
-              e.preventDefault();
-              if (id) editTask(id, e.target.value);
-            } else if (e.key === 'Escape') {
-              // Cancel edit (Req 4.4)
-              e.preventDefault();
-              state.editingId = null;
-              render();
-            }
+            if (e.key === 'Enter')  { e.preventDefault(); editTask(id, e.target.value); }
+            if (e.key === 'Escape') { e.preventDefault(); state.editingId = null; render(); }
           });
 
-          // ── Blur delegation: confirm edit when input loses focus ──────────────
-          elList.addEventListener('focusout', function (e) {
+          elList.addEventListener('focusout', e => {
             if (!e.target.classList.contains('todo-edit-input')) return;
-
-            // Ignore blur caused by Escape — editingId will already be null
             if (state.editingId === null) return;
-
-            const id = e.target.getAttribute('data-edit-id');
-            if (id) editTask(id, e.target.value);
+            editTask(e.target.getAttribute('data-edit-id'), e.target.value);
           });
         }
       }
 
-      function init() {
-        // Requirements 5.2, 5.3: load tasks from localStorage on startup.
-        // Treat null or any non-array value as an empty list — no error surfaced to user.
-        const saved = App.Storage.get('tld_tasks');
-        state.tasks = Array.isArray(saved) ? saved : [];
+      function addTask(label) {
+        const err = document.getElementById('todo-error');
+        const res = validateLabel(label);
+        if (!res.valid) { if (err) err.textContent = res.error; return; }
+        // Duplicate check
+        if (state.tasks.some(t => t.label.trim().toLowerCase() === res.trimmed.toLowerCase())) {
+          if (err) err.textContent = 'Task already exists.'; return;
+        }
+        if (err) err.textContent = '';
+        state.tasks.push({ id: uid(), label: res.trimmed, completed: false, createdAt: Date.now(), completedDate: null });
+        persist();
+        render();
+      }
 
-        // Wire the add-task form (Requirements 3.1, 3.2)
+      function editTask(id, newLabel) {
+        const res = validateLabel(newLabel);
+        state.editingId = null;
+        if (res.valid) {
+          const t = state.tasks.find(t => t.id === id);
+          if (t) { t.label = res.trimmed; persist(); }
+        }
+        render();
+      }
+
+      function toggleComplete(id) {
+        const t = state.tasks.find(t => t.id === id);
+        if (t) {
+          t.completed = !t.completed;
+          t.completedDate = t.completed ? todayStr() : null;
+          persist();
+        }
+        render();
+        if (App.Stats) App.Stats.onTaskChanged();
+      }
+
+      function deleteTask(id) {
+        state.tasks = state.tasks.filter(t => t.id !== id);
+        persist();
+        render();
+        if (App.Stats) App.Stats.onTaskChanged();
+      }
+
+      function init() {
+        const saved = App.Storage.get(App.Storage.KEYS.TASKS);
+        state.tasks = Array.isArray(saved) ? saved.map(t => ({ completedDate: null, ...t })) : [];
+        render();
+
         const form  = document.getElementById('todo-add-form');
         const input = document.getElementById('todo-input');
         if (form && input) {
-          form.addEventListener('submit', function (e) {
+          form.addEventListener('submit', e => {
             e.preventDefault();
-            const raw = input.value;
-            addTask(raw);
-            // Only clear the input if the label was valid (addTask shows error and returns early otherwise)
-            if (validateLabel(raw).valid) {
-              input.value = '';
-            }
+            addTask(input.value);
+            if (validateLabel(input.value).valid) input.value = '';
           });
         }
 
-        // Wire the sort select (Requirements 11.1, 11.2)
         const sortEl = document.getElementById('todo-sort');
         if (sortEl) {
-          // Set the select to match current state on load
           sortEl.value = state.sortOrder;
-          sortEl.addEventListener('change', function () {
-            state.sortOrder = sortEl.value;
-            render();
-          });
+          sortEl.addEventListener('change', () => { state.sortOrder = sortEl.value; render(); });
         }
-
-        // Render the loaded tasks immediately
-        render();
       }
 
-      return { init, validateLabel, createTask, addTask, editTask, toggleComplete, deleteTask, render, getSortedTasks };
+      // Expose _tasks for App.Stats
+      Object.defineProperty(App.TodoList || {}, '_tasks', { get: () => state.tasks });
+
+      return { init, validateLabel, addTask, editTask, toggleComplete, deleteTask, getSortedTasks,
+               get _tasks() { return state.tasks; } };
     })();
 
-    // ─── App.QuickLinks ──────────────────────────────────────────────────────────
+    // ── App.QuickLinks ────────────────────────────────────────────────────────
     App.QuickLinks = (function () {
-      // ── Internal state ──────────────────────────────────────────────────────
-      const state = {
-        links: []
-      };
+      const state = { links: [] };
 
-      // ── Helper: generate a unique id ─────────────────────────────────────────
-      function generateId() {
-        return (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function')
+      function uid() {
+        return (typeof crypto !== 'undefined' && crypto.randomUUID)
           ? crypto.randomUUID()
-          : Date.now().toString();
+          : Date.now().toString(36) + Math.random().toString(36).slice(2);
       }
 
-      /**
-       * Validate a link label and URL before adding.
-       * - Label must be non-empty after trimming.
-       * - URL must begin with "http://" or "https://".
-       * @param {string} label
-       * @param {string} url
-       * @returns {{ valid: false, error: string } | { valid: true }}
-       */
       function validateLink(label, url) {
-        const trimmedLabel = (label || '').trim();
-        if (trimmedLabel.length === 0) {
-          return { valid: false, error: 'Label required' };
-        }
-        const trimmedUrl = (url || '').trim();
-        if (!trimmedUrl.startsWith('http://') && !trimmedUrl.startsWith('https://')) {
+        if (!(label || '').trim()) return { valid: false, error: 'Label required.' };
+        const u = (url || '').trim();
+        if (!u.startsWith('http://') && !u.startsWith('https://'))
           return { valid: false, error: 'URL must start with http:// or https://' };
-        }
         return { valid: true };
       }
 
-      /**
-       * Add a new link to the collection.
-       * Validates input — shows inline error on failure via #links-error.
-       * On success: truncates label to 50 chars, creates a Link object, persists, re-renders.
-       * @param {string} label
-       * @param {string} url
-       */
-      function addLink(label, url) {
-        const result = validateLink(label, url);
-        const errorEl = document.getElementById('links-error');
-
-        if (!result.valid) {
-          if (errorEl) errorEl.textContent = result.error;
-          return;
-        }
-
-        // Clear any previous error
-        if (errorEl) errorEl.textContent = '';
-
-        // Truncate label to 50 characters (Req 7.6)
-        const truncatedLabel = (label || '').trim().slice(0, 50);
-
-        // Create the Link object (Req 7.2)
-        const link = {
-          id:    generateId(),
-          label: truncatedLabel,
-          url:   (url || '').trim(),
-          valid: true
-        };
-
-        state.links.push(link);
-
-        // Persist to localStorage (Req 8.1)
-        const saved = App.Storage.set('tld_links', state.links);
-        if (!saved) {
-          const errEl = document.getElementById('links-error');
-          if (errEl) errEl.textContent = '⚠ Could not save — storage may be full.';
-        }
-
-        render();
-      }
-
-      /**
-       * Delete a link by id.
-       * Filters it out of the array, persists the updated collection, re-renders.
-       * @param {string} id
-       */
-      function deleteLink(id) {
-        state.links = state.links.filter(function (link) {
-          return link.id !== id;
-        });
-
-        // Persist to localStorage (Req 8.1)
-        App.Storage.set('tld_links', state.links);
-
-        render();
-      }
-
-      /**
-       * Rebuild the #links-grid from state.links.
-       * - When empty: show #links-placeholder, clear grid.
-       * - When non-empty: hide placeholder, render one <button> per link.
-       *   Valid links open in a new tab on click; invalid links are disabled.
-       *   Each link entry also has a delete button with data-id attribute.
-       * Uses event delegation on #links-grid for delete clicks.
-       */
       function render() {
-        const grid       = document.getElementById('links-grid');
-        const placeholder = document.getElementById('links-placeholder');
+        const grid = document.getElementById('links-grid');
+        const ph   = document.getElementById('links-placeholder');
         if (!grid) return;
-
-        // Clear previous contents
         grid.innerHTML = '';
+        if (state.links.length === 0) { if (ph) ph.style.display = ''; return; }
+        if (ph) ph.style.display = 'none';
+        state.links.forEach(link => {
+          const chip = document.createElement('span');
+          chip.className = 'link-chip';
 
-        if (state.links.length === 0) {
-          // Show placeholder (Req 6.3)
-          if (placeholder) placeholder.style.display = '';
-          return;
-        }
-
-        // Hide placeholder (Req 6.3)
-        if (placeholder) placeholder.style.display = 'none';
-
-        state.links.forEach(function (link) {
-          // Wrapper span to group the link button + delete button
-          const wrapper = document.createElement('span');
-          wrapper.style.cssText = 'display:inline-flex;align-items:center;gap:0.25rem;';
-
-          // ── Link button ────────────────────────────────────────────────────
-          const btn = document.createElement('button');
-
-          // Truncate display label with ellipsis if > 50 chars (Req 6.1)
-          const displayLabel = link.label.length > 50
-            ? link.label.slice(0, 50) + '…'
-            : link.label;
-          btn.textContent = displayLabel;
-          btn.title       = link.label; // full label as tooltip
-
+          const disp = link.label.length > 50 ? link.label.slice(0,50) + '…' : link.label;
+          const linkBtn = document.createElement('button');
+          linkBtn.className = 'link-chip-btn';
+          linkBtn.textContent = disp;
+          linkBtn.title = link.label;
           if (!link.valid) {
-            // Invalid URL: disable button (Req 6.4)
-            btn.disabled = true;
-            btn.style.cssText = 'opacity:0.45;cursor:not-allowed;';
-            btn.setAttribute('aria-disabled', 'true');
+            linkBtn.disabled = true;
+            linkBtn.setAttribute('aria-disabled', 'true');
           } else {
-            // Valid URL: open in new tab on click (Req 6.2)
-            btn.addEventListener('click', function () {
-              window.open(link.url, '_blank', 'noopener,noreferrer');
-            });
+            linkBtn.addEventListener('click', () => window.open(link.url, '_blank', 'noopener,noreferrer'));
           }
 
-          // ── Delete button ──────────────────────────────────────────────────
-          const delBtn = document.createElement('button');
-          delBtn.textContent = '×';
-          delBtn.className   = 'btn-danger';
-          delBtn.setAttribute('data-id', link.id);
-          delBtn.setAttribute('aria-label', 'Delete link ' + link.label);
-          delBtn.style.cssText = 'padding:0.25rem 0.5rem;font-size:0.85rem;line-height:1;';
+          const del = document.createElement('button');
+          del.className = 'link-chip-del';
+          del.textContent = '×';
+          del.setAttribute('data-id', link.id);
+          del.setAttribute('aria-label', 'Delete link: ' + link.label);
+          del.addEventListener('click', () => deleteLink(link.id));
 
-          wrapper.appendChild(btn);
-          wrapper.appendChild(delBtn);
-          grid.appendChild(wrapper);
+          chip.appendChild(linkBtn);
+          chip.appendChild(del);
+          grid.appendChild(chip);
         });
       }
 
-      /**
-       * Initialise Quick Links:
-       * 1. Load persisted links from localStorage (Req 8.2, 8.3).
-       * 2. Compute the `valid` flag for each loaded link (Req 6.4).
-       * 3. Render the initial state.
-       * 4. Wire the #links-add-form submit event.
-       * 5. Wire event delegation on #links-grid for delete button clicks.
-       */
+      function addLink(label, url) {
+        const err = document.getElementById('links-error');
+        const res = validateLink(label, url);
+        if (!res.valid) { if (err) err.textContent = res.error; return; }
+        if (err) err.textContent = '';
+        const truncated = (label || '').trim().slice(0, 50);
+        state.links.push({ id: uid(), label: truncated, url: (url || '').trim(), valid: true });
+        const ok = App.Storage.set(App.Storage.KEYS.LINKS, state.links);
+        if (!ok && err) err.textContent = '⚠ Could not save — storage may be full.';
+        render();
+      }
+
+      function deleteLink(id) {
+        state.links = state.links.filter(l => l.id !== id);
+        App.Storage.set(App.Storage.KEYS.LINKS, state.links);
+        render();
+      }
+
       function init() {
-        // ── 1. Load from storage (Req 8.2 / 8.3) ─────────────────────────────
-        const stored = App.Storage.get('tld_links');
-        if (Array.isArray(stored)) {
-          // Compute/recompute `valid` flag for each link at load time (Req 6.4)
-          state.links = stored.map(function (link) {
-            const url = (link.url || '').trim();
-            return {
-              id:    link.id    || generateId(),
-              label: link.label || '',
-              url:   url,
-              valid: url.startsWith('http://') || url.startsWith('https://')
-            };
+        const saved = App.Storage.get(App.Storage.KEYS.LINKS);
+        if (Array.isArray(saved)) {
+          state.links = saved.map(l => {
+            const u = (l.url || '').trim();
+            return { id: l.id || uid(), label: l.label || '', url: u,
+                     valid: u.startsWith('http://') || u.startsWith('https://') };
           });
         }
-        // null or non-array → keep state.links as empty array (no error, Req 8.3)
-
-        // ── 2. Initial render ─────────────────────────────────────────────────
         render();
 
-        // ── 3. Wire #links-add-form submit (Req 7.1–7.4, 8.1) ───────────────
-        const form       = document.getElementById('links-add-form');
-        const labelInput = document.getElementById('links-label-input');
-        const urlInput   = document.getElementById('links-url-input');
-
-        if (form && labelInput && urlInput) {
-          form.addEventListener('submit', function (e) {
+        const form  = document.getElementById('links-add-form');
+        const lInp  = document.getElementById('links-label-input');
+        const uInp  = document.getElementById('links-url-input');
+        if (form && lInp && uInp) {
+          form.addEventListener('submit', e => {
             e.preventDefault();
-            const label = labelInput.value;
-            const url   = urlInput.value;
-            const prevCount = state.links.length;
-            addLink(label, url);
-            // Clear inputs only when a link was actually added (success path)
-            if (state.links.length > prevCount) {
-              labelInput.value = '';
-              urlInput.value   = '';
-            }
-          });
-        }
-
-        // ── 4. Event delegation for delete buttons on #links-grid (Req 7.5) ──
-        const grid = document.getElementById('links-grid');
-        if (grid) {
-          grid.addEventListener('click', function (e) {
-            const target = e.target.closest('[data-id]');
-            if (target && target.tagName === 'BUTTON') {
-              deleteLink(target.getAttribute('data-id'));
-            }
+            const prev = state.links.length;
+            addLink(lInp.value, uInp.value);
+            if (state.links.length > prev) { lInp.value = ''; uInp.value = ''; }
           });
         }
       }
 
-      return { init, validateLink, addLink, deleteLink, render };
+      return { init, validateLink, addLink, deleteLink };
     })();
 
-    // ─── Bootstrap: initialise all modules after DOM is ready ───────────────────
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
     document.addEventListener('DOMContentLoaded', function () {
-      App.Storage.init && App.Storage.init();
       App.ThemeManager.init();
       App.GreetingWidget.init();
       App.FocusTimer.init();
+      App.Stats.init();
       App.TodoList.init();
       App.QuickLinks.init();
+      // Sync stats after tasks are loaded
+      App.Stats.onTaskChanged();
     });
   </script>
 </body>
